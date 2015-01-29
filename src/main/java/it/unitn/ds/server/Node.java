@@ -3,17 +3,15 @@ package it.unitn.ds.server;
 import com.google.common.base.MoreObjects;
 import it.unitn.ds.Item;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Node {
 
     private int id;
 
-    private List<Item> items;
+    private Map<Integer, Item> items = new HashMap<>();
 
-    private List<Node> nodes;
+    private Map<Integer, Node> nodes = new HashMap<>();
 
     public Node(int id) {
         this.id = id;
@@ -27,19 +25,19 @@ public class Node {
         this.id = id;
     }
 
-    public List<Item> getItems() {
+    public Map<Integer, Item> getItems() {
         return items;
     }
 
-    public void setItems(List<Item> items) {
+    public void setItems(Map<Integer, Item> items) {
         this.items = items;
     }
 
-    public List<Node> getNodes() {
+    public Map<Integer, Node> getNodes() {
         return nodes;
     }
 
-    public void setNodes(List<Node> nodes) {
+    public void setNodes(Map<Integer, Node> nodes) {
         this.nodes = nodes;
     }
 
@@ -66,8 +64,8 @@ public class Node {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
-                .add("items", Arrays.toString(items.toArray()))
-                .add("nodes", Arrays.toString(nodes.toArray()))
+                .add("items", Arrays.toString(items.values().toArray()))
+                .add("nodes", Arrays.toString(nodes.values().toArray()))
                 .toString();
     }
 }

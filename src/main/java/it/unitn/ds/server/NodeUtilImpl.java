@@ -16,16 +16,18 @@ public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
 
     @Override
     public List<Node> getNodes() throws RemoteException {
-        return node.getNodes();
+        return (List<Node>) node.getNodes().values();
     }
 
     @Override
     public void addNode(Node node) throws RemoteException {
-        this.node.getNodes().add(node);
+        this.node.getNodes().put(node.getId(), node);
     }
 
     @Override
-    public void removeItems(List<Item> removedItems) throws RemoteException {
-        this.node.getItems().retainAll(removedItems);
+    public void removeItems(List<Item> items) throws RemoteException {
+        for (Item item : items) {
+            node.getItems().remove(item.getKey());
+        }
     }
 }

@@ -14,9 +14,6 @@ public final class ClientLauncher {
         logger.info("Client started");
         try {
             NodeUtil remoteCal = (NodeUtil) Naming.lookup("rmi://localhost/CalendarImpl");
-            long t1 = remoteCal.getNodes().getTime();
-            long t2 = remoteCal.getNodes().getTime();
-            logger.debug("This RMI call took " + (t2 - t1) + " milliseconds");
         } catch (Exception e) {
             logger.error(e);
         }

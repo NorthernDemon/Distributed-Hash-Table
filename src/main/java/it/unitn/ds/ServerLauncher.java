@@ -40,9 +40,9 @@ public final class ServerLauncher {
 
     private static void transferItems(Node ownNode, Node successorNode) throws Exception {
         List<Item> removedItems = new ArrayList<>();
-        for (Item item : successorNode.getItems()) {
+        for (Item item : successorNode.getItems().values()) {
             if (item.getKey() < ownNode.getId()) {
-                ownNode.getItems().add(item);
+                ownNode.getItems().put(item.getKey(), item);
                 removedItems.add(item);
             }
         }
@@ -61,7 +61,7 @@ public final class ServerLauncher {
     }
 
     private static void announce(Node ownNode, Node successorNode) throws Exception {
-        for (Node node : successorNode.getNodes()) {
+        for (Node node : successorNode.getNodes().values()) {
             NodeUtil remoteNode = (NodeUtil) Naming.lookup("rmi://localhost/NodeUtil" + node.getId());
             remoteNode.addNode(ownNode);
         }

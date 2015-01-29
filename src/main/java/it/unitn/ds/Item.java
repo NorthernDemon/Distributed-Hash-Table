@@ -2,7 +2,6 @@ package it.unitn.ds;
 
 import com.google.common.base.MoreObjects;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 public class Item {
@@ -16,10 +15,14 @@ public class Item {
     public Item() {
     }
 
-    public Item(int key, String value, int version) {
-        this.key = key;
+    public Item(String value, int version) {
         this.value = value;
         this.version = version;
+    }
+
+    public Item(int key, String value, int version) {
+        this(value, version);
+        this.key = key;
     }
 
     public int getKey() {
