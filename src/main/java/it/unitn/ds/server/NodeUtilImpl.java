@@ -5,7 +5,6 @@ import it.unitn.ds.util.StorageUtil;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {

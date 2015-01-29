@@ -2,7 +2,6 @@ package it.unitn.ds.server;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.List;
 
 public interface NodeUtil extends Remote {

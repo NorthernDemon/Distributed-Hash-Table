@@ -7,13 +7,11 @@ import it.unitn.ds.server.NodeUtilImpl;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public final class ServerLauncher {
 
@@ -67,13 +65,19 @@ public final class ServerLauncher {
         }
     }
 
+    @Nullable
     private static Node getSuccessorNode(int ownNodeId, List<Node> nodes) {
         for (Node node : nodes) {
             if (node.getId() > ownNodeId) {
                 return node;
             }
         }
-        return nodes.iterator().next();
+        Iterator<Node> iterator = nodes.iterator();
+        if (iterator.hasNext()) {
+            return iterator.next();
+        } else {
+            return null;
+        }
     }
 
     private static Node register(int ownNodeId) throws Exception {
