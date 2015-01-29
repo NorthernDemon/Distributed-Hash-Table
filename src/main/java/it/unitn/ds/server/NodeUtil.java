@@ -12,5 +12,5 @@ public interface NodeUtil extends Remote {
 
     void addNode(Node ownNode) throws RemoteException;
 
-    void removeItems(List<Item> removedItems) throws RemoteException;
+    void updateItems(List<Item> removedItems) throws RemoteException;
 }

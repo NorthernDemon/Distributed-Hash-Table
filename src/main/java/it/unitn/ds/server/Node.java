@@ -3,15 +3,18 @@ package it.unitn.ds.server;
 import com.google.common.base.MoreObjects;
 import it.unitn.ds.Item;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 public class Node {
 
     private int id;
 
-    private Map<Integer, Item> items = new HashMap<>();
+    private Map<Integer, Item> items = new TreeMap<>();
 
-    private Map<Integer, Node> nodes = new HashMap<>();
+    private Map<Integer, Node> nodes = new TreeMap<>();
 
     public Node(int id) {
         this.id = id;

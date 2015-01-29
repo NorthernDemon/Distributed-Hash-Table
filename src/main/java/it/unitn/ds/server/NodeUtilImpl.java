@@ -1,6 +1,7 @@
 package it.unitn.ds.server;
 
 import it.unitn.ds.Item;
+import it.unitn.ds.util.StorageUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -25,9 +26,9 @@ public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
     }
 
     @Override
-    public void removeItems(List<Item> items) throws RemoteException {
+    public void updateItems(List<Item> items) throws RemoteException {
         for (Item item : items) {
-            node.getItems().remove(item.getKey());
+            StorageUtil.write(node, item);
         }
     }
 }
