@@ -9,7 +9,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.*;
 
@@ -17,51 +20,59 @@ public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final int RMI_PORT = 1099;
-
     private static final String RMI_NODE = "rmi://localhost/NodeUtil";
 
     /**
-     * ./server.jar {Own Node ID},[{Existing Node ID}||0, if there are no nodes yet]
+     * ./server.jar {RMI port},{Own Node ID},[{Existing Node ID}||0, if there are no nodes yet]
      * <p/>
-     * Example: [10,0]
-     * Example: [15,10]
+     * Example: [1099,10,0]
+     * Example: [1100,15,10]
      *
      * @param args
      */
     public static void main(String[] args) {
+        int ownNodeId = 0;
         try {
             logger.info("Server Node is ready for request>>");
-            logger.info("Example: [{Own Node ID,{Existing Node ID}]");
-            logger.info("Example: [10,0]");
-            logger.info("Example: [15,10]");
+            logger.info("Example: [{RMI port},{Own Node ID},{Existing Node ID}||0]");
+            logger.info("Example: [1099,10,0]");
+            logger.info("Example: [1100,15,10]");
             Scanner scanner = new Scanner(System.in);
             String[] commands = scanner.nextLine().split(",");
-            int ownNodeId = Integer.parseInt(commands[0]);
-            int existingNodeId = Integer.parseInt(commands[1]);
+            int port = Integer.parseInt(commands[0]);
+            ownNodeId = Integer.parseInt(commands[1]);
+            int existingNodeId = Integer.parseInt(commands[2]);
             Node successorNode = null;
             Node ownNode;
             if (existingNodeId == 0) {
                 logger.info("NodeId=" + ownNodeId + " is the first node in circle");
-                ownNode = register(ownNodeId);
+                ownNode = register(ownNodeId, port);
+                logger.info("NodeId=" + ownNodeId + " is connected as first node="+ownNode);
             } else {
                 logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
                 successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
-                ownNode = register(ownNodeId);
+                ownNode = register(ownNodeId, port);
                 announceJoined(ownNode, successorNode.getNodes().values());
                 transferItems(ownNode, successorNode);
+                logger.info("NodeId=" + ownNodeId + " connected as node"+ownNode);
             }
             String line = scanner.nextLine();
             if (line.equals("leave")) {
-                logger.info("NodeId=" + ownNodeId + " is leaving the circle...");
+                logger.info("NodeId=" + ownNodeId + " is disconnecting from the circle...");
                 if (successorNode == null) {
                     successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 }
                 transferItems(successorNode, ownNode);
                 announceLeft(ownNode, successorNode.getNodes().values());
+                logger.info("NodeId=" + ownNodeId + " disconnected as node"+ownNode);
             }
         } catch (Exception e) {
             logger.error("RMI error", e);
+            try {
+                Naming.unbind(RMI_NODE + ownNodeId);
+            } catch (Exception e1) {
+                logger.error("Naming.unbind error", e);
+            }
         }
     }
 
@@ -80,11 +91,12 @@ public final class ServerLauncher {
         }
     }
 
-    private static Node register(int ownNodeId) throws Exception {
-        logger.info("RMI: registering with default port=" + RMI_PORT);
-        LocateRegistry.createRegistry(RMI_PORT);
+    private static Node register(int ownNodeId, int port) throws Exception {
+        logger.info("RMI: registering with port=" + port);
+        LocateRegistry.createRegistry(port);
         Node node = new Node(ownNodeId);
         Naming.bind(RMI_NODE + ownNodeId, new NodeUtilImpl(node));
+        node.getNodes().put(node.getId(), node);
         logger.info("RMI: Node registered=" + node);
         return node;
     }
@@ -96,6 +108,7 @@ public final class ServerLauncher {
     }
 
     private static void announceLeft(Node ownNode, Collection<Node> nodes) throws Exception {
+        ownNode.getNodes().remove(ownNode.getId());
         for (Node node : nodes) {
             ((NodeUtil) Naming.lookup(RMI_NODE + node.getId())).removeNode(ownNode);
         }

@@ -67,8 +67,8 @@ public class Node implements Serializable {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
-                .add("items", Arrays.toString(items.values().toArray()))
-                .add("nodes", Arrays.toString(nodes.values().toArray()))
+                .add("items", Arrays.toString(items.keySet().toArray()))
+                .add("nodes", Arrays.toString(nodes.keySet().toArray()))
                 .toString();
     }
 }
