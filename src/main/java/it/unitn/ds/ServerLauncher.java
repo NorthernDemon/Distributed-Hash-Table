@@ -9,10 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.MalformedURLException;
 import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.*;
 
@@ -47,14 +44,14 @@ public final class ServerLauncher {
             if (existingNodeId == 0) {
                 logger.info("NodeId=" + ownNodeId + " is the first node in circle");
                 ownNode = register(ownNodeId, port);
-                logger.info("NodeId=" + ownNodeId + " is connected as first node="+ownNode);
+                logger.info("NodeId=" + ownNodeId + " is connected as first node=" + ownNode);
             } else {
                 logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
                 successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 ownNode = register(ownNodeId, port);
-                announceJoined(ownNode, successorNode.getNodes().values());
+                announceJoin(ownNode, successorNode.getNodes().values());
                 transferItems(ownNode, successorNode);
-                logger.info("NodeId=" + ownNodeId + " connected as node"+ownNode);
+                logger.info("NodeId=" + ownNodeId + " connected as node" + ownNode);
             }
             String line = scanner.nextLine();
             if (line.equals("leave")) {
@@ -63,8 +60,8 @@ public final class ServerLauncher {
                     successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 }
                 transferItems(successorNode, ownNode);
-                announceLeft(ownNode, successorNode.getNodes().values());
-                logger.info("NodeId=" + ownNodeId + " disconnected as node"+ownNode);
+                announceLeave(ownNode, successorNode.getNodes().values());
+                logger.info("NodeId=" + ownNodeId + " disconnected as node" + ownNode);
             }
         } catch (Exception e) {
             logger.error("RMI error", e);
@@ -80,41 +77,52 @@ public final class ServerLauncher {
     private static Node getSuccessorNode(int ownNodeId, List<Node> nodes) {
         for (Node node : nodes) {
             if (node.getId() > ownNodeId) {
+                logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
                 return node;
             }
         }
         Iterator<Node> iterator = nodes.iterator();
         if (iterator.hasNext()) {
-            return iterator.next();
+            Node node = iterator.next();
+            logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
+            return node;
         } else {
+            logger.warn("NodeId=" + ownNodeId + " did not find successorNode");
             return null;
         }
     }
 
     private static Node register(int ownNodeId, int port) throws Exception {
-        logger.info("RMI: registering with port=" + port);
+        logger.debug("RMI: registering with port=" + port);
         LocateRegistry.createRegistry(port);
         Node node = new Node(ownNodeId);
         Naming.bind(RMI_NODE + ownNodeId, new NodeUtilImpl(node));
         node.getNodes().put(node.getId(), node);
-        logger.info("RMI: Node registered=" + node);
+        logger.debug("RMI: Node registered=" + node);
         return node;
     }
 
-    private static void announceJoined(Node ownNode, Collection<Node> nodes) throws Exception {
+    private static void announceJoin(Node ownNode, Collection<Node> nodes) throws Exception {
+        logger.debug("NodeId=" + ownNode.getId() + " announcing join to node.size()=" + nodes.size());
         for (Node node : nodes) {
+            ownNode.getNodes().put(node.getId(), node);
             ((NodeUtil) Naming.lookup(RMI_NODE + node.getId())).addNode(ownNode);
+            logger.debug("NodeId=" + ownNode.getId() + " announced join to node=" + node);
         }
     }
 
-    private static void announceLeft(Node ownNode, Collection<Node> nodes) throws Exception {
+    private static void announceLeave(Node ownNode, Collection<Node> nodes) throws Exception {
+        logger.debug("NodeId=" + ownNode.getId() + " announcing leave to node.size()=" + nodes.size());
         ownNode.getNodes().remove(ownNode.getId());
         for (Node node : nodes) {
+            ownNode.getNodes().remove(node.getId());
             ((NodeUtil) Naming.lookup(RMI_NODE + node.getId())).removeNode(ownNode);
+            logger.debug("NodeId=" + ownNode.getId() + " announced leave to node=" + node);
         }
     }
 
     private static void transferItems(Node toNode, Node fromNode) throws Exception {
+        logger.debug("Transferring items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
         List<Item> removedItems = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
             if (item.getKey() < toNode.getId()) {
@@ -123,5 +131,6 @@ public final class ServerLauncher {
             }
         }
         ((NodeUtil) Naming.lookup(RMI_NODE + fromNode.getId())).updateItems(removedItems);
+        logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
     }
 }
