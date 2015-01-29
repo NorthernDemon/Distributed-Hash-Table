@@ -1,4 +1,4 @@
-package it.unitn.ds;
+package it.unitn.ds.server;
 
 import com.google.common.base.MoreObjects;
 
@@ -11,9 +11,6 @@ public class Item {
     private String value;
 
     private int version;
-
-    public Item() {
-    }
 
     public Item(String value, int version) {
         this.value = value;

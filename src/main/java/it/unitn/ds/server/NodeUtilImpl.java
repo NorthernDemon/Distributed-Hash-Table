@@ -1,6 +1,5 @@
 package it.unitn.ds.server;
 
-import it.unitn.ds.Item;
 import it.unitn.ds.util.StorageUtil;
 
 import java.rmi.RemoteException;

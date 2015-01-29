@@ -3,7 +3,7 @@ package it.unitn.ds.util;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
-import it.unitn.ds.Item;
+import it.unitn.ds.server.Item;
 import it.unitn.ds.server.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

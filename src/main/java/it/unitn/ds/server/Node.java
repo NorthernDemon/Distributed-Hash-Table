@@ -1,7 +1,6 @@
 package it.unitn.ds.server;
 
 import com.google.common.base.MoreObjects;
-import it.unitn.ds.Item;
 
 import java.util.Arrays;
 import java.util.Map;

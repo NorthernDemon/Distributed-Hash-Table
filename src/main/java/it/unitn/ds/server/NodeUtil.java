@@ -1,7 +1,5 @@
 package it.unitn.ds.server;
 
-import it.unitn.ds.Item;
-
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
