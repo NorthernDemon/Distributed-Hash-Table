@@ -1,0 +1,6 @@
+*.txt
+*.class
+*.idea
+*.iml
+*.jar
+target
