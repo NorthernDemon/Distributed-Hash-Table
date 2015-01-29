@@ -11,7 +11,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Scanner;
 
 public final class ServerLauncher {
 
@@ -39,7 +42,6 @@ public final class ServerLauncher {
             int port = Integer.parseInt(commands[0]);
             ownNodeId = Integer.parseInt(commands[1]);
             int existingNodeId = Integer.parseInt(commands[2]);
-            Node successorNode = null;
             Node ownNode;
             if (existingNodeId == 0) {
                 logger.info("NodeId=" + ownNodeId + " is the first node in circle");
@@ -47,29 +49,20 @@ public final class ServerLauncher {
                 logger.info("NodeId=" + ownNodeId + " is connected as first node=" + ownNode);
             } else {
                 logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
-                successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
+                Node successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 ownNode = register(ownNodeId, port);
                 announceJoin(ownNode, successorNode.getNodes().values());
                 transferItems(ownNode, successorNode);
                 logger.info("NodeId=" + ownNodeId + " connected as node" + ownNode);
             }
-            String line = scanner.nextLine();
-            if (line.equals("leave")) {
-                logger.info("NodeId=" + ownNodeId + " is disconnecting from the circle...");
-                if (successorNode == null) {
-                    successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
-                }
-                transferItems(successorNode, ownNode);
-                announceLeave(ownNode, successorNode.getNodes().values());
-                logger.info("NodeId=" + ownNodeId + " disconnected as node" + ownNode);
-            }
+            scanner.nextLine(); // waiting for leave signal
+            logger.info("NodeId=" + ownNodeId + " is disconnecting from the circle...");
+            leave(ownNode);
+            logger.info("NodeId=" + ownNodeId + " disconnected as node" + ownNode);
+            System.exit(0);
         } catch (Exception e) {
             logger.error("RMI error", e);
-            try {
-                Naming.unbind(RMI_NODE + ownNodeId);
-            } catch (Exception e1) {
-                logger.error("Naming.unbind error", e);
-            }
+            unbindRMI(ownNodeId);
         }
     }
 
@@ -81,22 +74,26 @@ public final class ServerLauncher {
                 return node;
             }
         }
-        Iterator<Node> iterator = nodes.iterator();
-        if (iterator.hasNext()) {
-            Node node = iterator.next();
-            logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
-            return node;
-        } else {
-            logger.warn("NodeId=" + ownNodeId + " did not find successorNode");
+        Node node = nodes.iterator().next();
+        if (node.getId() == ownNodeId) {
+            logger.warn("NodeId=" + ownNodeId + " did not find successorNode, except itself");
             return null;
         }
+        logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
+        return node;
     }
 
-    private static Node register(int ownNodeId, int port) throws Exception {
+    private static Node register(final int ownNodeId, int port) throws Exception {
         logger.debug("RMI: registering with port=" + port);
         LocateRegistry.createRegistry(port);
         Node node = new Node(ownNodeId);
         Naming.bind(RMI_NODE + ownNodeId, new NodeUtilImpl(node));
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                logger.info("Stopping the RMI...");
+                unbindRMI(ownNodeId);
+            }
+        });
         node.getNodes().put(node.getId(), node);
         logger.debug("RMI: Node registered=" + node);
         return node;
@@ -132,5 +129,21 @@ public final class ServerLauncher {
         }
         ((NodeUtil) Naming.lookup(RMI_NODE + fromNode.getId())).updateItems(removedItems);
         logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
+    }
+
+    private static void leave(Node ownNode) throws Exception {
+        Node successorNode = getSuccessorNode(ownNode.getId(), new ArrayList<>(ownNode.getNodes().values()));
+        if (successorNode != null) {
+            transferItems(successorNode, ownNode);
+            announceLeave(ownNode, ownNode.getNodes().values());
+        }
+    }
+
+    private static void unbindRMI(int ownNodeId) {
+        try {
+            Naming.unbind(RMI_NODE + ownNodeId);
+        } catch (Exception e) {
+            logger.error("Naming.unbind error", e);
+        }
     }
 }
