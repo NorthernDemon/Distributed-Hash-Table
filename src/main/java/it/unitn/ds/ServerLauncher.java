@@ -55,6 +55,7 @@ public final class ServerLauncher {
                 transferItems(ownNode, successorNode);
                 logger.info("NodeId=" + ownNodeId + " connected as node" + ownNode);
             }
+            logger.info("Press [ENTER] to leave");
             scanner.nextLine(); // waiting for leave signal
             logger.info("NodeId=" + ownNodeId + " is disconnecting from the circle...");
             leave(ownNode);
