@@ -13,8 +13,6 @@ public final class ClientLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String RMI_NODE = "rmi://localhost/NodeUtil";
-
     /**
      * ./client.jar {operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}
      * <p/>
@@ -72,5 +70,9 @@ public final class ClientLauncher {
 
     public static void update(int nodeId, int key, String value) {
         logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
+        if (value.contains(",")) {
+            logger.warn("Cannot store commas in value field... yet!");
+            return;
+        }
     }
 }

@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
+/**
+ * Convenient class to work with Node's internal list of items and maintain CSV file
+ */
 public abstract class StorageUtil {
 
     private static final Logger logger = LogManager.getLogger();
@@ -35,6 +38,13 @@ public abstract class StorageUtil {
         logger.info(read(node, 9));
     }
 
+    /**
+     * Creates/Updates new item into memory of given node and
+     * to CSV file in format: {key},{value},{version}
+     *
+     * @param node    responsible for item
+     * @param newItem item to be written
+     */
     public static void write(Node node, Item newItem) {
         try (PrintWriter writer = new PrintWriter(getFileName(node), "UTF-8")) {
             Map<Integer, Item> items = node.getItems();
@@ -48,6 +58,13 @@ public abstract class StorageUtil {
         }
     }
 
+    /**
+     * Returns an item by key from CSV file of the provided node
+     *
+     * @param node responsible for item
+     * @param key  of the item
+     * @return an item fetched by key from given node
+     */
     @Nullable
     public static Item read(Node node, int key) {
         try {
@@ -67,6 +84,6 @@ public abstract class StorageUtil {
     }
 
     private static String getFileName(Node node) {
-        return "Node-" + node.getId() + ".txt";
+        return "Node-" + node.getId() + ".csv";
     }
 }
