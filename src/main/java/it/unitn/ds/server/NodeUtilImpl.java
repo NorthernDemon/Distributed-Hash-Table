@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TreeSet;
 
 public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
 
@@ -21,21 +21,27 @@ public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
     }
 
     @Override
-    public List<Node> getNodes() throws RemoteException {
-        logger.debug("Get Nodes request=" + Arrays.toString(node.getNodes().keySet().toArray()));
-        return new ArrayList<>(node.getNodes().values());
+    public Node getNode() throws RemoteException {
+        logger.debug("Get Node request=" + node);
+        return node;
     }
 
     @Override
-    public void addNode(Node node) throws RemoteException {
-        logger.debug("Add node request with node=" + node);
-        this.node.getNodes().put(node.getId(), node);
+    public TreeSet<Integer> getNodes() throws RemoteException {
+        logger.debug("Get Nodes request=" + Arrays.toString(node.getNodes().toArray()));
+        return node.getNodes();
     }
 
     @Override
-    public void removeNode(Node node) throws RemoteException {
-        logger.debug("Remove node request with node=" + node);
-        this.node.getNodes().remove(node.getId());
+    public void addNode(int nodeId) throws RemoteException {
+        logger.debug("Add node request with node=" + nodeId);
+        node.getNodes().add(nodeId);
+    }
+
+    @Override
+    public void removeNode(int nodeId) throws RemoteException {
+        logger.debug("Remove node request with node=" + nodeId);
+        node.getNodes().remove(nodeId);
     }
 
     @Override

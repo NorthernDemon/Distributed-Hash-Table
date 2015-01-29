@@ -40,6 +40,7 @@ public abstract class StorageUtil {
             Map<Integer, Item> items = node.getItems();
             items.put(newItem.getKey(), newItem);
             for (Item item : items.values()) {
+                logger.debug("Storage write item=" + item);
                 writer.write(item.getKey() + "," + item.getValue() + "," + item.getVersion() + "\n");
             }
         } catch (Exception e) {
@@ -54,7 +55,9 @@ public abstract class StorageUtil {
             for (String line : lines) {
                 if (line.startsWith(key + ",")) {
                     Iterator<String> it = Splitter.on(",").split(line).iterator();
-                    return new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
+                    Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
+                    logger.debug("Storage read item=" + item);
+                    return item;
                 }
             }
         } catch (IOException e) {

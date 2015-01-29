@@ -3,10 +3,7 @@ package it.unitn.ds.server;
 import com.google.common.base.MoreObjects;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Node implements Serializable {
 
@@ -14,7 +11,7 @@ public class Node implements Serializable {
 
     private Map<Integer, Item> items = new TreeMap<>();
 
-    private Map<Integer, Node> nodes = new TreeMap<>();
+    private TreeSet<Integer> nodes = new TreeSet<>();
 
     public Node(int id) {
         this.id = id;
@@ -36,11 +33,11 @@ public class Node implements Serializable {
         this.items = items;
     }
 
-    public Map<Integer, Node> getNodes() {
+    public TreeSet<Integer> getNodes() {
         return nodes;
     }
 
-    public void setNodes(Map<Integer, Node> nodes) {
+    public void setNodes(TreeSet<Integer> nodes) {
         this.nodes = nodes;
     }
 
@@ -68,7 +65,7 @@ public class Node implements Serializable {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("items", Arrays.toString(items.keySet().toArray()))
-                .add("nodes", Arrays.toString(nodes.keySet().toArray()))
+                .add("nodes", Arrays.toString(nodes.toArray()))
                 .toString();
     }
 }

@@ -12,9 +12,9 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+import java.util.TreeSet;
 
 public final class ServerLauncher {
 
@@ -51,7 +51,7 @@ public final class ServerLauncher {
                 logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
                 Node successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 ownNode = register(ownNodeId, port);
-                announceJoin(ownNode, successorNode.getNodes().values());
+                announceJoin(ownNode, successorNode.getNodes());
                 transferItems(ownNode, successorNode);
                 logger.info("NodeId=" + ownNodeId + " connected as node" + ownNode);
             }
@@ -67,20 +67,23 @@ public final class ServerLauncher {
     }
 
     @Nullable
-    private static Node getSuccessorNode(int ownNodeId, List<Node> nodes) {
-        for (Node node : nodes) {
-            if (node.getId() > ownNodeId) {
-                logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
-                return node;
+    private static Node getSuccessorNode(int ownNodeId, TreeSet<Integer> nodes) throws Exception {
+        for (int nodeId : nodes) {
+            if (nodeId > ownNodeId) {
+                return getNode(ownNodeId, nodeId);
             }
         }
-        Node node = nodes.iterator().next();
-        if (node.getId() == ownNodeId) {
+        int nodeId = nodes.iterator().next();
+        if (nodeId == ownNodeId) {
             logger.warn("NodeId=" + ownNodeId + " did not find successorNode, except itself");
             return null;
         }
-        logger.debug("NodeId=" + ownNodeId + " found successorNode=" + node);
-        return node;
+        return getNode(ownNodeId, nodeId);
+    }
+
+    private static Node getNode(int ownNodeId, int nodeId) throws Exception {
+        logger.debug("NodeId=" + ownNodeId + " found successorNodeId=" + nodeId);
+        return ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).getNode();
     }
 
     private static Node register(final int ownNodeId, int port) throws Exception {
@@ -94,27 +97,29 @@ public final class ServerLauncher {
                 unbindRMI(ownNodeId);
             }
         });
-        node.getNodes().put(node.getId(), node);
+        node.getNodes().add(node.getId());
         logger.debug("RMI: Node registered=" + node);
         return node;
     }
 
-    private static void announceJoin(Node ownNode, Collection<Node> nodes) throws Exception {
+    private static void announceJoin(Node ownNode, TreeSet<Integer> nodes) throws Exception {
         logger.debug("NodeId=" + ownNode.getId() + " announcing join to node.size()=" + nodes.size());
-        for (Node node : nodes) {
-            ownNode.getNodes().put(node.getId(), node);
-            ((NodeUtil) Naming.lookup(RMI_NODE + node.getId())).addNode(ownNode);
-            logger.debug("NodeId=" + ownNode.getId() + " announced join to node=" + node);
+        for (int nodeId : nodes) {
+            if (nodeId != ownNode.getId()) {
+                ownNode.getNodes().add(nodeId);
+                ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).addNode(ownNode.getId());
+                logger.debug("NodeId=" + ownNode.getId() + " announced join to nodeId=" + nodeId);
+            }
         }
     }
 
-    private static void announceLeave(Node ownNode, Collection<Node> nodes) throws Exception {
+    private static void announceLeave(Node ownNode, TreeSet<Integer> nodes) throws Exception {
         logger.debug("NodeId=" + ownNode.getId() + " announcing leave to node.size()=" + nodes.size());
-        ownNode.getNodes().remove(ownNode.getId());
-        for (Node node : nodes) {
-            ownNode.getNodes().remove(node.getId());
-            ((NodeUtil) Naming.lookup(RMI_NODE + node.getId())).removeNode(ownNode);
-            logger.debug("NodeId=" + ownNode.getId() + " announced leave to node=" + node);
+        for (int nodeId : nodes) {
+            if (nodeId != ownNode.getId()) {
+                ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).removeNode(ownNode.getId());
+                logger.debug("NodeId=" + ownNode.getId() + " announced leave to nodeId=" + nodeId);
+            }
         }
     }
 
@@ -132,10 +137,10 @@ public final class ServerLauncher {
     }
 
     private static void leave(Node ownNode) throws Exception {
-        Node successorNode = getSuccessorNode(ownNode.getId(), new ArrayList<>(ownNode.getNodes().values()));
+        Node successorNode = getSuccessorNode(ownNode.getId(), ownNode.getNodes());
         if (successorNode != null) {
             transferItems(successorNode, ownNode);
-            announceLeave(ownNode, ownNode.getNodes().values());
+            announceLeave(ownNode, ownNode.getNodes());
         }
     }
 
