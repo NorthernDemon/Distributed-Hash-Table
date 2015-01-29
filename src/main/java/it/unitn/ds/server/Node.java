@@ -2,12 +2,13 @@ package it.unitn.ds.server;
 
 import com.google.common.base.MoreObjects;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-public class Node {
+public class Node implements Serializable {
 
     private int id;
 

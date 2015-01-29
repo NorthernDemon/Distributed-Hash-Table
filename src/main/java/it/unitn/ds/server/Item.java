@@ -2,9 +2,10 @@ package it.unitn.ds.server;
 
 import com.google.common.base.MoreObjects;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Item {
+public class Item implements Serializable {
 
     private int key;
 

@@ -8,7 +8,9 @@ import it.unitn.ds.server.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 public abstract class StorageUtil {
@@ -39,8 +41,8 @@ public abstract class StorageUtil {
             for (Item item : items.values()) {
                 writer.write(item.getKey() + "," + item.getValue() + "," + item.getVersion() + "\n");
             }
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            logger.error(e);
+        } catch (Exception e) {
+            logger.error("Failed to write item=" + newItem + " for node=" + node, e);
         }
     }
 
@@ -54,7 +56,7 @@ public abstract class StorageUtil {
                 }
             }
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Failed to read item with key=" + key + " for node=" + node, e);
         }
         return null;
     }

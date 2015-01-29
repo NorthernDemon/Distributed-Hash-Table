@@ -4,6 +4,8 @@ import it.unitn.ds.util.StorageUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
@@ -16,12 +18,17 @@ public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
 
     @Override
     public List<Node> getNodes() throws RemoteException {
-        return (List<Node>) node.getNodes().values();
+        return new ArrayList<>(node.getNodes().values());
     }
 
     @Override
     public void addNode(Node node) throws RemoteException {
         this.node.getNodes().put(node.getId(), node);
+    }
+
+    @Override
+    public void removeNode(Node node) throws RemoteException {
+        this.node.getNodes().remove(node.getId());
     }
 
     @Override
