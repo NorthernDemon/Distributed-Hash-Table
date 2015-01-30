@@ -23,8 +23,43 @@ public class NodeLocal {
 
     private Registry registry;
 
+    public void joinFirst(int port, int nodeId) throws Exception {
+        logger.info("NodeId=" + nodeId + " is the first node in circle");
+        register(nodeId, port);
+        logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
+    }
+
+    public void join(int port, int nodeId, int existingNodeId) throws Exception {
+        logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
+        TreeSet<Integer> nodes = getRemoteNode(existingNodeId).getNodes();
+        Node successorNode = getSuccessorNode(nodeId, nodes);
+        register(nodeId, port);
+        if (successorNode != null) {
+            announceJoin(successorNode.getNodes());
+            transferItems(successorNode, node);
+        }
+        logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
+    }
+
+    public void leave() throws Exception {
+        if (node != null) {
+            logger.info("NodeId=" + node.getId() + " is disconnecting from the circle...");
+            Node successorNode = getSuccessorNode(node.getId(), node.getNodes());
+            if (successorNode != null) {
+                transferItems(node, successorNode);
+                announceLeave(node.getNodes());
+            }
+            Naming.unbind(RMI_NODE + node.getId());
+            UnicastRemoteObject.unexportObject(registry, true);
+            logger.info("NodeId=" + node.getId() + " disconnected.");
+            node = null;
+        } else {
+            logger.info("Node already left.");
+        }
+    }
+
     @Nullable
-    public Node getSuccessorNode(int nodeId, TreeSet<Integer> nodes) throws Exception {
+    private Node getSuccessorNode(int nodeId, TreeSet<Integer> nodes) throws Exception {
         logger.debug("NodeId=" + nodeId + " is searching for successorNode...");
         int successorNodeId = getSuccessorNodeId(nodeId, nodes);
         if (successorNodeId == nodeId) {
@@ -44,7 +79,7 @@ public class NodeLocal {
         return nodes.iterator().next();
     }
 
-    public Node register(final int nodeId, int port) throws Exception {
+    private Node register(final int nodeId, int port) throws Exception {
         logger.debug("RMI: registering with port=" + port);
         registry = LocateRegistry.createRegistry(port);
         node = new Node(nodeId);
@@ -52,15 +87,19 @@ public class NodeLocal {
         Naming.bind(RMI_NODE + nodeId, new NodeRemoteImpl(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                logger.info("Stopping the RMI of nodeId=" + nodeId);
-                closeRMI();
+                logger.info("Auto-leaving nodeId=" + nodeId);
+                try {
+                    leave();
+                } catch (Exception e) {
+                    logger.error("Failed to leave nodeId=" + node.getId(), e);
+                }
             }
         });
         logger.debug("RMI: Node registered=" + node);
         return node;
     }
 
-    public void announceJoin(TreeSet<Integer> nodes) throws Exception {
+    private void announceJoin(TreeSet<Integer> nodes) throws Exception {
         logger.debug("NodeId=" + node.getId() + " announcing join to node.size()=" + nodes.size());
         for (int nodeId : nodes) {
             if (nodeId != node.getId()) {
@@ -71,7 +110,7 @@ public class NodeLocal {
         }
     }
 
-    public void announceLeave(TreeSet<Integer> nodes) throws Exception {
+    private void announceLeave(TreeSet<Integer> nodes) throws Exception {
         logger.debug("NodeId=" + node.getId() + " announcing leave to node.size()=" + nodes.size());
         for (int nodeId : nodes) {
             if (nodeId != node.getId()) {
@@ -81,7 +120,7 @@ public class NodeLocal {
         }
     }
 
-    public void transferItems(Node fromNode, Node toNode) throws Exception {
+    private void transferItems(Node fromNode, Node toNode) throws Exception {
         if (fromNode.getItems().isEmpty()) {
             logger.debug("Nothing to transfer fromNode=" + fromNode + " toNode=" + toNode);
             return;
@@ -104,33 +143,11 @@ public class NodeLocal {
         return items;
     }
 
-    public void leave() throws Exception {
-        Node successorNode = getSuccessorNode(node.getId(), node.getNodes());
-        if (successorNode != null) {
-            transferItems(node, successorNode);
-            announceLeave(node.getNodes());
-        }
-        closeRMI();
-    }
-
-    private void closeRMI() {
-        if (node != null) {
-            try {
-                Naming.unbind(RMI_NODE + node.getId());
-                UnicastRemoteObject.unexportObject(registry, true);
-            } catch (Exception e) {
-                logger.error("Failed to Naming.unbind() for nodeId=" + node.getId(), e);
-            }
-            node = null;
-        }
-    }
-
     public NodeRemote getRemoteNode(int nodeId) throws Exception {
         return ((NodeRemote) Naming.lookup(RMI_NODE + nodeId));
     }
 
-    @Nullable
-    public Node getNode() {
-        return node;
+    public boolean isConnected() {
+        return node != null;
     }
 }

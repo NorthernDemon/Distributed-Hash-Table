@@ -1,12 +1,9 @@
 package it.unitn.ds;
 
-import it.unitn.ds.server.Node;
 import it.unitn.ds.server.NodeLocal;
 import it.unitn.ds.util.InputUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.TreeSet;
 
 public final class ServerLauncher {
 
@@ -42,24 +39,14 @@ public final class ServerLauncher {
      */
     public static void join(int port, int nodeId, int existingNodeId) {
         try {
-            if (nodeLocal.getNode() != null) {
+            if (nodeLocal.isConnected()) {
                 logger.warn("Cannot join without leaving first!");
                 return;
             }
             if (existingNodeId == 0) {
-                logger.info("NodeId=" + nodeId + " is the first node in circle");
-                nodeLocal.register(nodeId, port);
-                logger.info("NodeId=" + nodeId + " is connected as first node=" + nodeLocal.getNode());
+                nodeLocal.joinFirst(port, nodeId);
             } else {
-                logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-                TreeSet<Integer> nodes = nodeLocal.getRemoteNode(existingNodeId).getNodes();
-                Node successorNode = nodeLocal.getSuccessorNode(nodeId, nodes);
-                nodeLocal.register(nodeId, port);
-                if (successorNode != null) {
-                    nodeLocal.announceJoin(successorNode.getNodes());
-                    nodeLocal.transferItems(successorNode, nodeLocal.getNode());
-                }
-                logger.info("NodeId=" + nodeId + " connected as node=" + nodeLocal.getNode() + " with successorNode=" + successorNode);
+                nodeLocal.join(port, nodeId, existingNodeId);
             }
         } catch (Exception e) {
             logger.error("RMI error", e);
@@ -72,14 +59,11 @@ public final class ServerLauncher {
      */
     public static void leave() {
         try {
-            if (nodeLocal.getNode() == null) {
+            if (!nodeLocal.isConnected()) {
                 logger.warn("Cannot leave without joining first!");
                 return;
             }
-            int nodeId = nodeLocal.getNode().getId();
-            logger.info("NodeId=" + nodeId + " is disconnecting from the circle...");
             nodeLocal.leave();
-            logger.info("NodeId=" + nodeId + " disconnected.");
         } catch (Exception e) {
             logger.error("RMI error", e);
             System.exit(1);
