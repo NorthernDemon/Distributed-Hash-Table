@@ -55,7 +55,7 @@ public final class ServerLauncher {
                     announceJoin(node, successorNode.getNodes());
                     transferItems(successorNode, node);
                 }
-                logger.info("NodeId=" + nodeId + " connected as node=" + node + " before successorNode=" + successorNode);
+                logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
             }
             logger.info("Press [ENTER] to leave");
             scanner.nextLine(); // waiting for leave signal
@@ -111,7 +111,7 @@ public final class ServerLauncher {
     }
 
     private static void announceJoin(Node node, TreeSet<Integer> nodes) throws Exception {
-        logger.debug("NodeId=" + node.getId() + " announcing join to node.size()=" + (nodes.size() - 1));
+        logger.debug("NodeId=" + node.getId() + " announcing join to node.size()=" + nodes.size());
         for (int nodeId : nodes) {
             if (nodeId != node.getId()) {
                 node.getNodes().add(nodeId);
@@ -122,7 +122,7 @@ public final class ServerLauncher {
     }
 
     private static void announceLeave(Node node, TreeSet<Integer> nodes) throws Exception {
-        logger.debug("NodeId=" + node.getId() + " announcing leave to node.size()=" + (nodes.size() - 1));
+        logger.debug("NodeId=" + node.getId() + " announcing leave to node.size()=" + nodes.size());
         for (int nodeId : nodes) {
             if (nodeId != node.getId()) {
                 getRemoteNode(nodeId).removeNode(node.getId());
@@ -132,6 +132,10 @@ public final class ServerLauncher {
     }
 
     private static void transferItems(Node fromNode, Node toNode) throws Exception {
+        if (fromNode.getItems().isEmpty()) {
+            logger.debug("Nothing to transfer fromNode=" + fromNode);
+            return;
+        }
         logger.debug("Transferring items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
         getRemoteNode(fromNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
         logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());

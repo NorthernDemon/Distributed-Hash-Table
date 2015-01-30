@@ -22,13 +22,13 @@ public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
 
     @Override
     public Node getNode() throws RemoteException {
-        logger.debug("Get Node request=" + node);
+        logger.debug("Get node=" + node);
         return node;
     }
 
     @Override
     public TreeSet<Integer> getNodes() throws RemoteException {
-        logger.debug("Get Nodes request=" + Arrays.toString(node.getNodes().toArray()));
+        logger.debug("Get nodes=" + Arrays.toString(node.getNodes().toArray()));
         return node.getNodes();
     }
 
@@ -36,12 +36,14 @@ public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
     public void addNode(int nodeId) throws RemoteException {
         logger.debug("Add node request with node=" + nodeId);
         node.getNodes().add(nodeId);
+        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().toArray()));
     }
 
     @Override
     public void removeNode(int nodeId) throws RemoteException {
         logger.debug("Remove node request with node=" + nodeId);
         node.getNodes().remove(nodeId);
+        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().toArray()));
     }
 
     @Override
@@ -50,5 +52,6 @@ public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
         for (Item item : items) {
             StorageUtil.write(node, item);
         }
+        logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
 }
