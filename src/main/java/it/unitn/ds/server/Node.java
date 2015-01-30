@@ -5,7 +5,7 @@ import com.google.common.base.MoreObjects;
 import java.io.Serializable;
 import java.util.*;
 
-public class Node implements Serializable {
+public final class Node implements Serializable {
 
     private int id;
 

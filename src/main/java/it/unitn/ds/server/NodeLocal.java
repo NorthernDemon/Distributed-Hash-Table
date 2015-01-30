@@ -13,12 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-public class NodeLocal {
+public final class NodeLocal {
 
     private static final Logger logger = LogManager.getLogger();
 
     private static final String RMI_NODE = "rmi://localhost/NodeRemote";
 
+    @Nullable
     private Node node;
 
     private Registry registry;

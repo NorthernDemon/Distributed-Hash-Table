@@ -5,7 +5,7 @@ import com.google.common.base.MoreObjects;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class Item implements Serializable {
+public final class Item implements Serializable {
 
     private int key;
 
@@ -13,13 +13,9 @@ public class Item implements Serializable {
 
     private int version;
 
-    public Item(String value, int version) {
+    public Item(int key, String value, int version) {
         this.value = value;
         this.version = version;
-    }
-
-    public Item(int key, String value, int version) {
-        this(value, version);
         this.key = key;
     }
 

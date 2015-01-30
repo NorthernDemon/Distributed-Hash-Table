@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
-public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
+public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
 
     private static final Logger logger = LogManager.getLogger();
 

@@ -22,23 +22,6 @@ public abstract class StorageUtil {
 
     private static final String SEPARATOR = ",";
 
-    public static void main(String[] args) {
-        Node node = new Node(1);
-        Map<Integer, Item> i = new HashMap<>();
-        i.put(11, new Item(11, "I am a Cow11", 1));
-        i.put(12, new Item(12, "I am a Cow12", 2));
-        i.put(13, new Item(13, "I am a Cow13", 3));
-        node.setItems(i);
-        write(node, new Item(10, "I am a Cow", 1));
-        write(node, new Item(13, "I am a Cow13 updated", 4));
-        logger.info(Arrays.toString(node.getItems().values().toArray()));
-        logger.info(read(node, 11));
-        logger.info(read(node, 12));
-        logger.info(read(node, 13));
-        logger.info(read(node, 10));
-        logger.info(read(node, 9));
-    }
-
     /**
      * Creates/Updates new item into memory of given node and
      * to CSV file in format: {key},{value},{version}
