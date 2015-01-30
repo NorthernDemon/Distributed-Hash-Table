@@ -144,12 +144,12 @@ public final class ServerLauncher {
         List<Item> items = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
             if (item.getKey() <= toNode.getId()) {
-                StorageUtil.write(toNode, item);
                 items.add(item);
             } else {
-                return items;
+                break;
             }
         }
+        StorageUtil.write(toNode, items);
         return items;
     }
 

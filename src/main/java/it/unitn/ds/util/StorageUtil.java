@@ -45,17 +45,35 @@ public abstract class StorageUtil {
      * @param node    responsible for item
      * @param newItem item to be written
      */
-    public static void write(Node node, Item newItem) {
+    public static void write(Node node, final Item newItem) {
+        write(node, new ArrayList<>(Arrays.asList(newItem)));
+    }
+
+    /**
+     * Creates/Updates list of new items into memory of given node and
+     * to CSV file in format: {key},{value},{version}
+     *
+     * @param node     responsible for item
+     * @param newItems list of item to be written
+     */
+    public static void write(Node node, List<Item> newItems) {
         try (PrintWriter writer = new PrintWriter(getFileName(node), "UTF-8")) {
-            Map<Integer, Item> items = node.getItems();
-            items.put(newItem.getKey(), newItem);
+            Map<Integer, Item> items = updateNodeItems(node, newItems);
             for (Item item : items.values()) {
                 logger.debug("Storage write item=" + item);
                 writer.write(item.getKey() + "," + item.getValue() + "," + item.getVersion() + "\n");
             }
         } catch (Exception e) {
-            logger.error("Failed to write item=" + newItem + " for node=" + node, e);
+            logger.error("Failed to write items=" + Arrays.toString(newItems.toArray()) + " for node=" + node, e);
         }
+    }
+
+    private static Map<Integer, Item> updateNodeItems(Node node, List<Item> newItems) {
+        Map<Integer, Item> items = node.getItems();
+        for (Item item : newItems) {
+            items.put(item.getKey(), item);
+        }
+        return items;
     }
 
     /**

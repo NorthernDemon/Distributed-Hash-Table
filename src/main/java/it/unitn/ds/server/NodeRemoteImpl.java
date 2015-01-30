@@ -49,9 +49,7 @@ public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
     @Override
     public void updateItems(List<Item> items) throws RemoteException {
         logger.debug("Update items request with items=" + Arrays.toString(items.toArray()));
-        for (Item item : items) {
-            StorageUtil.write(node, item);
-        }
+        StorageUtil.write(node, items);
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
 }
