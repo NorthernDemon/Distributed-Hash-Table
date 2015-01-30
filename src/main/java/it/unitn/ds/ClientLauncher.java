@@ -1,5 +1,8 @@
 package it.unitn.ds;
 
+import it.unitn.ds.server.Item;
+import it.unitn.ds.server.NodeLocal;
+import it.unitn.ds.server.NodeRemote;
 import it.unitn.ds.util.InputUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,6 +10,8 @@ import org.apache.logging.log4j.Logger;
 public final class ClientLauncher {
 
     private static final Logger logger = LogManager.getLogger();
+
+    private static NodeLocal nodeLocal = new NodeLocal();
 
     /**
      * ./client.jar [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]
@@ -31,7 +36,15 @@ public final class ClientLauncher {
      * @param key    of the item
      */
     public static void get(int nodeId, int key) {
-        logger.info("Get from nodeId=" + nodeId + ", key=" + key);
+        try {
+            logger.info("Get from nodeId=" + nodeId + " item with key=" + key);
+            NodeRemote remoteNode = nodeLocal.getRemoteNode(nodeId);
+            Item item = remoteNode.getItem(key);
+            logger.info("Got item=" + item + " from nodeId=" + nodeId);
+        } catch (Exception e) {
+            logger.error("RMI error", e);
+            System.exit(1);
+        }
     }
 
     /**
@@ -42,10 +55,18 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(int nodeId, int key, String value) {
-        logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
         if (value.contains(",")) {
             logger.warn("Cannot store commas in value field... yet!");
             return;
+        }
+        try {
+            logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
+            NodeRemote remoteNode = nodeLocal.getRemoteNode(nodeId);
+            Item item = remoteNode.updateItem(key, value);
+            logger.info("Updated item=" + item + " from nodeId=" + nodeId);
+        } catch (Exception e) {
+            logger.error("RMI error", e);
+            System.exit(1);
         }
     }
 }

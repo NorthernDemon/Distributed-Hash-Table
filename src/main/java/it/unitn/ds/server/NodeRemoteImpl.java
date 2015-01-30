@@ -52,4 +52,14 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
         StorageUtil.write(node, items);
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
+
+    @Override
+    public Item getItem(int key) throws RemoteException {
+        return StorageUtil.read(node.getId(), key);
+    }
+
+    @Override
+    public Item updateItem(int key, String value) throws RemoteException {
+        return StorageUtil.write(node, new Item(key, value, 0));
+    }
 }

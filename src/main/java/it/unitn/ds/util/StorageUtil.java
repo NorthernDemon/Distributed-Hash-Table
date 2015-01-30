@@ -29,8 +29,14 @@ public abstract class StorageUtil {
      * @param node    responsible for item
      * @param newItem item to be written
      */
-    public static void write(Node node, Item newItem) {
-        write(node, new ArrayList<>(Arrays.asList(newItem)));
+    @Nullable
+    public static Item write(Node node, Item newItem) {
+        List<Item> items = write(node, new ArrayList<>(Arrays.asList(newItem)));
+        if (!items.isEmpty()) {
+            return items.iterator().next();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -40,15 +46,18 @@ public abstract class StorageUtil {
      * @param node     responsible for item
      * @param newItems list of item to be written
      */
-    public static void write(Node node, List<Item> newItems) {
-        try (PrintWriter writer = new PrintWriter(getFileName(node), "UTF-8")) {
-            for (Item item : updateNodeItems(node, newItems).values()) {
+    public static List<Item> write(Node node, List<Item> newItems) {
+        try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
+            Collection<Item> items = updateNodeItems(node, newItems).values();
+            for (Item item : items) {
                 logger.debug("Storage write item=" + item);
                 writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + "\n");
             }
+            return newItems;
         } catch (Exception e) {
             logger.error("Failed to write items=" + Arrays.toString(newItems.toArray()) + " for node=" + node, e);
         }
+        return new ArrayList<>();
     }
 
     private static Map<Integer, Item> updateNodeItems(Node node, List<Item> newItems) {
@@ -62,14 +71,14 @@ public abstract class StorageUtil {
     /**
      * Returns an item by key from CSV file of the provided node
      *
-     * @param node responsible for item
-     * @param key  of the item
+     * @param nodeId responsible for item
+     * @param key    of the item
      * @return an item fetched by key from given node
      */
     @Nullable
-    public static Item read(Node node, int key) {
+    public static Item read(int nodeId, int key) {
         try {
-            for (String line : Files.readLines(new File(getFileName(node)), Charsets.UTF_8)) {
+            for (String line : Files.readLines(new File(getFileName(nodeId)), Charsets.UTF_8)) {
                 if (line.startsWith(key + SEPARATOR)) {
                     Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
                     Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
@@ -78,12 +87,12 @@ public abstract class StorageUtil {
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to read item with key=" + key + " for node=" + node, e);
+            logger.error("Failed to read item with key=" + key + " for nodeId=" + nodeId, e);
         }
         return null;
     }
 
-    private static String getFileName(Node node) {
-        return "Node-" + node.getId() + ".csv";
+    private static String getFileName(int nodeId) {
+        return "Node-" + nodeId + ".csv";
     }
 }
