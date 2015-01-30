@@ -21,6 +21,8 @@ public abstract class StorageUtil {
 
     private static final Logger logger = LogManager.getLogger();
 
+    private static final String SEPARATOR = ",";
+
     public static void main(String[] args) {
         Node node = new Node(1);
         Map<Integer, Item> i = new HashMap<>();
@@ -45,7 +47,7 @@ public abstract class StorageUtil {
      * @param node    responsible for item
      * @param newItem item to be written
      */
-    public static void write(Node node, final Item newItem) {
+    public static void write(Node node, Item newItem) {
         write(node, new ArrayList<>(Arrays.asList(newItem)));
     }
 
@@ -58,10 +60,9 @@ public abstract class StorageUtil {
      */
     public static void write(Node node, List<Item> newItems) {
         try (PrintWriter writer = new PrintWriter(getFileName(node), "UTF-8")) {
-            Map<Integer, Item> items = updateNodeItems(node, newItems);
-            for (Item item : items.values()) {
+            for (Item item : updateNodeItems(node, newItems).values()) {
                 logger.debug("Storage write item=" + item);
-                writer.write(item.getKey() + "," + item.getValue() + "," + item.getVersion() + "\n");
+                writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + "\n");
             }
         } catch (Exception e) {
             logger.error("Failed to write items=" + Arrays.toString(newItems.toArray()) + " for node=" + node, e);
@@ -86,16 +87,15 @@ public abstract class StorageUtil {
     @Nullable
     public static Item read(Node node, int key) {
         try {
-            List<String> lines = Files.readLines(new File(getFileName(node)), Charsets.UTF_8);
-            for (String line : lines) {
-                if (line.startsWith(key + ",")) {
-                    Iterator<String> it = Splitter.on(",").split(line).iterator();
+            for (String line : Files.readLines(new File(getFileName(node)), Charsets.UTF_8)) {
+                if (line.startsWith(key + SEPARATOR)) {
+                    Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
                     Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
                     logger.debug("Storage read item=" + item);
                     return item;
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Failed to read item with key=" + key + " for node=" + node, e);
         }
         return null;
