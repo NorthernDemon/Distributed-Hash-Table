@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 import java.util.List;
 import java.util.TreeSet;
 
-public interface NodeUtil extends Remote {
+public interface NodeRemote extends Remote {
 
     Node getNode() throws RemoteException;
 

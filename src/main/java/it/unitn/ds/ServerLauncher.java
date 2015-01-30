@@ -1,9 +1,8 @@
 package it.unitn.ds;
 
-import it.unitn.ds.server.Item;
-import it.unitn.ds.server.Node;
-import it.unitn.ds.server.NodeUtil;
-import it.unitn.ds.server.NodeUtilImpl;
+import it.unitn.ds.server.*;
+import it.unitn.ds.server.NodeRemote;
+import it.unitn.ds.server.NodeRemoteImpl;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +19,7 @@ public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String RMI_NODE = "rmi://localhost/NodeUtil";
+    private static final String RMI_NODE = "rmi://localhost/NodeRemote";
 
     /**
      * ./server.jar {RMI port},{Own Node ID},[{Existing Node ID}||0, if there are no nodes yet]
@@ -49,7 +48,7 @@ public final class ServerLauncher {
                 logger.info("NodeId=" + ownNodeId + " is connected as first node=" + ownNode);
             } else {
                 logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
-                Node successorNode = getSuccessorNode(ownNodeId, ((NodeUtil) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
+                Node successorNode = getSuccessorNode(ownNodeId, ((NodeRemote) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
                 ownNode = register(ownNodeId, port);
                 announceJoin(ownNode, successorNode.getNodes());
                 transferItems(ownNode, successorNode);
@@ -84,14 +83,14 @@ public final class ServerLauncher {
 
     private static Node getNode(int ownNodeId, int nodeId) throws Exception {
         logger.debug("NodeId=" + ownNodeId + " found successorNodeId=" + nodeId);
-        return ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).getNode();
+        return ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).getNode();
     }
 
     private static Node register(final int ownNodeId, int port) throws Exception {
         logger.debug("RMI: registering with port=" + port);
         LocateRegistry.createRegistry(port);
         Node node = new Node(ownNodeId);
-        Naming.bind(RMI_NODE + ownNodeId, new NodeUtilImpl(node));
+        Naming.bind(RMI_NODE + ownNodeId, new NodeRemoteImpl(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 logger.info("Stopping the RMI...");
@@ -108,7 +107,7 @@ public final class ServerLauncher {
         for (int nodeId : nodes) {
             if (nodeId != ownNode.getId()) {
                 ownNode.getNodes().add(nodeId);
-                ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).addNode(ownNode.getId());
+                ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).addNode(ownNode.getId());
                 logger.debug("NodeId=" + ownNode.getId() + " announced join to nodeId=" + nodeId);
             }
         }
@@ -118,7 +117,7 @@ public final class ServerLauncher {
         logger.debug("NodeId=" + ownNode.getId() + " announcing leave to node.size()=" + nodes.size());
         for (int nodeId : nodes) {
             if (nodeId != ownNode.getId()) {
-                ((NodeUtil) Naming.lookup(RMI_NODE + nodeId)).removeNode(ownNode.getId());
+                ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).removeNode(ownNode.getId());
                 logger.debug("NodeId=" + ownNode.getId() + " announced leave to nodeId=" + nodeId);
             }
         }
@@ -133,7 +132,7 @@ public final class ServerLauncher {
                 removedItems.add(item);
             }
         }
-        ((NodeUtil) Naming.lookup(RMI_NODE + fromNode.getId())).updateItems(removedItems);
+        ((NodeRemote) Naming.lookup(RMI_NODE + fromNode.getId())).updateItems(removedItems);
         logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
     }
 

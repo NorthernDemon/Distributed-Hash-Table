@@ -10,13 +10,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
-public class NodeUtilImpl extends UnicastRemoteObject implements NodeUtil {
+public class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
 
     private static final Logger logger = LogManager.getLogger();
 
     private Node node;
 
-    public NodeUtilImpl(Node node) throws RemoteException {
+    public NodeRemoteImpl(Node node) throws RemoteException {
         this.node = node;
     }
 
