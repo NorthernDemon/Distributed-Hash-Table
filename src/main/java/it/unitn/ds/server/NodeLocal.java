@@ -1,6 +1,7 @@
 package it.unitn.ds.server;
 
 import it.unitn.ds.util.RemoteUtil;
+import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -43,11 +44,12 @@ public final class NodeLocal {
             logger.info("NodeId=" + node.getId() + " is disconnecting from the circle...");
             Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
             if (successorNode != null) {
-                RemoteUtil.transferItems(node, successorNode);
+                RemoteUtil.copyItems(node, successorNode);
                 RemoteUtil.announceLeave(node, node.getNodes());
             }
             Naming.unbind(RemoteUtil.RMI_NODE + node.getId());
             UnicastRemoteObject.unexportObject(registry, true);
+            StorageUtil.removeFile(node.getId());
             logger.info("NodeId=" + node.getId() + " disconnected.");
             node = null;
         } else {

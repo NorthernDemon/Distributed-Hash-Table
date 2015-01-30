@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -67,7 +68,23 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Transfers items from one node to another
+     * Copies items from one node to another, keeps items of fromNode
+     *
+     * @param fromNode from which to transfer
+     * @param toNode   to which to transfer
+     */
+    public static void copyItems(Node fromNode, Node toNode) throws RemoteException {
+        if (fromNode.getItems().isEmpty()) {
+            logger.debug("Nothing to copy fromNode=" + fromNode + " toNode=" + toNode);
+            return;
+        }
+        ArrayList<Item> items = new ArrayList<>(fromNode.getItems().values());
+        logger.debug("Coping items fromNode=" + fromNode + " toNode=" + toNode + " items=" + Arrays.toString(items.toArray()));
+        getRemoteNode(toNode.getId()).updateItems(items);
+    }
+
+    /**
+     * Transfers items from one node to another, removes items of fromNode
      *
      * @param fromNode from which to transfer
      * @param toNode   to which to transfer
@@ -77,21 +94,26 @@ public abstract class RemoteUtil {
             logger.debug("Nothing to transfer fromNode=" + fromNode + " toNode=" + toNode);
             return;
         }
-        logger.debug("Transferring items fromNode=" + fromNode + " toNode=" + toNode);
-        getRemoteNode(toNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
-        logger.debug("Transferred items fromNode=" + fromNode + " toNode=" + toNode);
+        List<Item> items = getTransferItems(fromNode, toNode);
+        logger.debug("Transferring items fromNode=" + fromNode + " toNode=" + toNode + " items=" + Arrays.toString(items.toArray()));
+        getRemoteNode(toNode.getId()).updateItems(items);
+        getRemoteNode(fromNode.getId()).removeItems(items);
     }
 
-    private static List<Item> getRemovedItems(Node toNode, Node fromNode) {
-        if (toNode.getId() < fromNode.getId()) {
-            return new ArrayList<>(fromNode.getItems().values());
-        }
+    /**
+     * Returns a list of items, that should be transferred contained in toNode
+     *
+     * @param fromNode from which to transfer
+     * @param toNode   to which to transfer
+     * @return list of items for toNode
+     */
+    private static List<Item> getTransferItems(Node fromNode, Node toNode) {
         List<Item> items = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
             if (item.getKey() <= toNode.getId()) {
                 items.add(item);
             } else {
-                break;
+                return items;
             }
         }
         return items;

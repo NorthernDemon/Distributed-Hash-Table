@@ -2,16 +2,20 @@ package it.unitn.ds.util;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
-import com.google.common.io.Files;
 import it.unitn.ds.server.Item;
 import it.unitn.ds.server.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Convenient class to work with Node's internal list of items and maintain CSV file
@@ -23,48 +27,21 @@ public abstract class StorageUtil {
     public static final String SEPARATOR = ",";
 
     /**
-     * Creates/Updates new item into memory of given node and
-     * to CSV file in format: {key},{value},{version}
+     * Creates/Updates list of new items into CSV file in format: {key},{value},{version}
      *
-     * @param node    responsible for item
-     * @param newItem item to be written
+     * @param node responsible for item
      */
-    @Nullable
-    public static Item write(Node node, Item newItem) {
-        List<Item> items = write(node, new ArrayList<>(Arrays.asList(newItem)));
-        if (!items.isEmpty()) {
-            return items.iterator().next();
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Creates/Updates list of new items into memory of given node and
-     * to CSV file in format: {key},{value},{version}
-     *
-     * @param node     responsible for item
-     * @param newItems list of item to be written
-     */
-    public static List<Item> write(Node node, List<Item> newItems) {
+    public static Collection<Item> write(Node node) {
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
-            Collection<Item> items = updateNodeItems(node, newItems).values();
-            for (Item item : items) {
+            for (Item item : node.getItems().values()) {
                 logger.debug("Storage write item=" + item);
                 writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + "\n");
             }
-            return newItems;
+            return node.getItems().values();
         } catch (Exception e) {
-            logger.error("Failed to write items=" + Arrays.toString(newItems.toArray()) + " for node=" + node, e);
+            logger.error("Failed to write items=" + Arrays.toString(node.getItems().values().toArray()) + " for node=" + node, e);
         }
         return new ArrayList<>();
-    }
-
-    private static Map<Integer, Item> updateNodeItems(Node node, List<Item> newItems) {
-        for (Item item : newItems) {
-            node.getItems().put(item.getKey(), item);
-        }
-        return node.getItems();
     }
 
     /**
@@ -77,7 +54,7 @@ public abstract class StorageUtil {
     @Nullable
     public static Item read(int nodeId, int key) {
         try {
-            for (String line : Files.readLines(new File(getFileName(nodeId)), Charsets.UTF_8)) {
+            for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
                 if (line.startsWith(key + SEPARATOR)) {
                     Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
                     Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
@@ -85,7 +62,7 @@ public abstract class StorageUtil {
                     return item;
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to read item with key=" + key + " for nodeId=" + nodeId, e);
         }
         return null;
@@ -93,5 +70,13 @@ public abstract class StorageUtil {
 
     private static String getFileName(int nodeId) {
         return "storage/Node-" + nodeId + ".csv";
+    }
+
+    public static void removeFile(int nodeId) {
+        try {
+            Files.delete(Paths.get(getFileName(nodeId)));
+        } catch (IOException e) {
+            logger.error("Failed to remove file for nodeId=" + nodeId, e);
+        }
     }
 }

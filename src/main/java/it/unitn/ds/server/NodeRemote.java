@@ -17,6 +17,8 @@ public interface NodeRemote extends Remote {
 
     void updateItems(List<Item> items) throws RemoteException;
 
+    void removeItems(List<Item> items) throws RemoteException;
+
     Item getItem(int key) throws RemoteException;
 
     Item updateItem(int key, String value) throws RemoteException;
