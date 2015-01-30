@@ -21,7 +21,7 @@ public final class ClientLauncher {
         logger.info("Example: [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]");
         logger.info("Example: [get,10,12]");
         logger.info("Example: [update,15,12,New Value Item]");
-        InputUtil.readInput("it.unitn.ds.ClientLauncher");
+        InputUtil.readInput(ClientLauncher.class.getName());
     }
 
     public static void get(int nodeId, int key) {

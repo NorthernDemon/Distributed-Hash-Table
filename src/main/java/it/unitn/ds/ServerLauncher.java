@@ -29,11 +29,15 @@ public final class ServerLauncher {
         logger.info("Example: [join,1099,10,0]");
         logger.info("Example: [join,1100,15,10]");
         logger.info("Example: [leave]");
-        InputUtil.readInput("it.unitn.ds.ServerLauncher");
+        InputUtil.readInput(ServerLauncher.class.getName());
     }
 
     public static void join(int port, int nodeId, int existingNodeId) {
         try {
+            if (nodeLocal.getNode() != null) {
+                logger.warn("Cannot join without leaving first!");
+                return;
+            }
             if (existingNodeId == 0) {
                 logger.info("NodeId=" + nodeId + " is the first node in circle");
                 nodeLocal.register(nodeId, port);
@@ -57,6 +61,10 @@ public final class ServerLauncher {
 
     public static void leave() {
         try {
+            if (nodeLocal.getNode() == null) {
+                logger.warn("Cannot leave without joining first!");
+                return;
+            }
             int nodeId = nodeLocal.getNode().getId();
             logger.info("NodeId=" + nodeId + " is disconnecting from the circle...");
             nodeLocal.leave();

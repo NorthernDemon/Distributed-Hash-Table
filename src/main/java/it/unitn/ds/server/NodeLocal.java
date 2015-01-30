@@ -116,6 +116,7 @@ public class NodeLocal {
         return ((NodeRemote) Naming.lookup(RMI_NODE + nodeId));
     }
 
+    @Nullable
     public Node getNode() {
         return node;
     }
