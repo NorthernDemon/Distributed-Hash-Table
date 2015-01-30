@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
@@ -18,6 +20,8 @@ public class NodeLocal {
     private static final String RMI_NODE = "rmi://localhost/NodeRemote";
 
     private Node node;
+
+    private Registry registry;
 
     @Nullable
     public Node getSuccessorNode(int nodeId, TreeSet<Integer> nodes) throws Exception {
@@ -42,18 +46,14 @@ public class NodeLocal {
 
     public Node register(final int nodeId, int port) throws Exception {
         logger.debug("RMI: registering with port=" + port);
-        LocateRegistry.createRegistry(port);
+        registry = LocateRegistry.createRegistry(port);
         node = new Node(nodeId);
         node.getNodes().add(node.getId());
-        Naming.rebind(RMI_NODE + nodeId, new NodeRemoteImpl(node));
+        Naming.bind(RMI_NODE + nodeId, new NodeRemoteImpl(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 logger.info("Stopping the RMI of nodeId=" + nodeId);
-                try {
-                    Naming.unbind(RMI_NODE + nodeId);
-                } catch (Exception e) {
-                    logger.error("Failed to Naming.unbind() for nodeId=" + nodeId, e);
-                }
+                closeRMI();
             }
         });
         logger.debug("RMI: Node registered=" + node);
@@ -110,6 +110,19 @@ public class NodeLocal {
             transferItems(node, successorNode);
             announceLeave(node.getNodes());
         }
+        closeRMI();
+    }
+
+    private void closeRMI() {
+        if (node != null) {
+            try {
+                Naming.unbind(RMI_NODE + node.getId());
+                UnicastRemoteObject.unexportObject(registry, true);
+            } catch (Exception e) {
+                logger.error("Failed to Naming.unbind() for nodeId=" + node.getId(), e);
+            }
+            node = null;
+        }
     }
 
     public NodeRemote getRemoteNode(int nodeId) throws Exception {
@@ -119,9 +132,5 @@ public class NodeLocal {
     @Nullable
     public Node getNode() {
         return node;
-    }
-
-    public void setNode(Node node) {
-        this.node = node;
     }
 }

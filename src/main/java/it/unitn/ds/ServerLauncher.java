@@ -79,8 +79,7 @@ public final class ServerLauncher {
             int nodeId = nodeLocal.getNode().getId();
             logger.info("NodeId=" + nodeId + " is disconnecting from the circle...");
             nodeLocal.leave();
-            logger.info("NodeId=" + nodeId + " disconnected as node=" + nodeLocal.getNode());
-            nodeLocal.setNode(null);
+            logger.info("NodeId=" + nodeId + " disconnected.");
         } catch (Exception e) {
             logger.error("RMI error", e);
             System.exit(1);
