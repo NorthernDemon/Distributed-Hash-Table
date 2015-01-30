@@ -20,7 +20,7 @@ public abstract class StorageUtil {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String SEPARATOR = ",";
+    public static final String SEPARATOR = ",";
 
     /**
      * Creates/Updates new item into memory of given node and
@@ -93,6 +93,6 @@ public abstract class StorageUtil {
     }
 
     private static String getFileName(int nodeId) {
-        return "Node-" + nodeId + ".csv";
+        return "storage/Node-" + nodeId + ".csv";
     }
 }

@@ -1,17 +1,15 @@
 package it.unitn.ds;
 
 import it.unitn.ds.server.Item;
-import it.unitn.ds.server.NodeLocal;
-import it.unitn.ds.server.NodeRemote;
 import it.unitn.ds.util.InputUtil;
+import it.unitn.ds.util.RemoteUtil;
+import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class ClientLauncher {
 
     private static final Logger logger = LogManager.getLogger();
-
-    private static NodeLocal nodeLocal = new NodeLocal();
 
     /**
      * ./client.jar [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]
@@ -38,8 +36,7 @@ public final class ClientLauncher {
     public static void get(int nodeId, int key) {
         try {
             logger.info("Get from nodeId=" + nodeId + " item with key=" + key);
-            NodeRemote remoteNode = nodeLocal.getRemoteNode(nodeId);
-            Item item = remoteNode.getItem(key);
+            Item item = RemoteUtil.getRemoteNode(nodeId).getItem(key);
             logger.info("Got item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
             logger.error("RMI error", e);
@@ -55,14 +52,13 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(int nodeId, int key, String value) {
-        if (value.contains(",")) {
-            logger.warn("Cannot store commas in value field... yet!");
+        if (value.contains(StorageUtil.SEPARATOR)) {
+            logger.warn("Cannot store \"" + StorageUtil.SEPARATOR + "\" in value field... yet!");
             return;
         }
         try {
             logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
-            NodeRemote remoteNode = nodeLocal.getRemoteNode(nodeId);
-            Item item = remoteNode.updateItem(key, value);
+            Item item = RemoteUtil.getRemoteNode(nodeId).updateItem(key, value);
             logger.info("Updated item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
             logger.error("RMI error", e);

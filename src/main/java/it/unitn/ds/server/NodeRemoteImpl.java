@@ -1,5 +1,6 @@
 package it.unitn.ds.server;
 
+import it.unitn.ds.util.RemoteUtil;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,11 +56,27 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
 
     @Override
     public Item getItem(int key) throws RemoteException {
-        return StorageUtil.read(node.getId(), key);
+        logger.debug("Get item request with key=" + key);
+        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
+        if (nodeId == node.getId()) {
+            logger.debug("I am the correct node for item");
+            return node.getItems().get(key);
+        } else {
+            logger.debug("Forwarding get item request to nodeId=" + nodeId);
+            return RemoteUtil.getRemoteNode(nodeId).getItem(key);
+        }
     }
 
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
-        return StorageUtil.write(node, new Item(key, value, 0));
+        logger.debug("Update item request with key=" + key);
+        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
+        if (nodeId == node.getId()) {
+            logger.debug("I am the correct node for item");
+            return StorageUtil.write(node, new Item(key, value, 0));
+        } else {
+            logger.debug("Forwarding update item request to nodeId=" + nodeId);
+            return RemoteUtil.getRemoteNode(nodeId).updateItem(key, value);
+        }
     }
 }
