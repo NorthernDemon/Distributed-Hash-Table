@@ -1,6 +1,7 @@
 package it.unitn.ds;
 
-import it.unitn.ds.server.*;
+import it.unitn.ds.server.Item;
+import it.unitn.ds.server.Node;
 import it.unitn.ds.server.NodeRemote;
 import it.unitn.ds.server.NodeRemoteImpl;
 import it.unitn.ds.util.StorageUtil;
@@ -30,7 +31,6 @@ public final class ServerLauncher {
      * @param args
      */
     public static void main(String[] args) {
-        int ownNodeId = 0;
         try {
             logger.info("Server Node is ready for request>>");
             logger.info("Example: [{RMI port},{Own Node ID},{Existing Node ID}||0]");
@@ -39,116 +39,126 @@ public final class ServerLauncher {
             Scanner scanner = new Scanner(System.in);
             String[] commands = scanner.nextLine().split(",");
             int port = Integer.parseInt(commands[0]);
-            ownNodeId = Integer.parseInt(commands[1]);
+            int nodeId = Integer.parseInt(commands[1]);
             int existingNodeId = Integer.parseInt(commands[2]);
-            Node ownNode;
+            Node node;
             if (existingNodeId == 0) {
-                logger.info("NodeId=" + ownNodeId + " is the first node in circle");
-                ownNode = register(ownNodeId, port);
-                logger.info("NodeId=" + ownNodeId + " is connected as first node=" + ownNode);
+                logger.info("NodeId=" + nodeId + " is the first node in circle");
+                node = register(nodeId, port);
+                logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
             } else {
-                logger.info("NodeId=" + ownNodeId + " connects to existing nodeId=" + existingNodeId);
-                Node successorNode = getSuccessorNode(ownNodeId, ((NodeRemote) Naming.lookup(RMI_NODE + existingNodeId)).getNodes());
-                ownNode = register(ownNodeId, port);
-                announceJoin(ownNode, successorNode.getNodes());
-                transferItems(ownNode, successorNode);
-                logger.info("NodeId=" + ownNodeId + " connected as node" + ownNode);
+                logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
+                TreeSet<Integer> nodes = getRemoteNode(existingNodeId).getNodes();
+                Node successorNode = getSuccessorNode(nodeId, nodes);
+                node = register(nodeId, port);
+                if (successorNode != null) {
+                    announceJoin(node, successorNode.getNodes());
+                    transferItems(successorNode, node);
+                }
+                logger.info("NodeId=" + nodeId + " connected as node=" + node + " before successorNode=" + successorNode);
             }
             logger.info("Press [ENTER] to leave");
             scanner.nextLine(); // waiting for leave signal
-            logger.info("NodeId=" + ownNodeId + " is disconnecting from the circle...");
-            leave(ownNode);
-            logger.info("NodeId=" + ownNodeId + " disconnected as node" + ownNode);
+            logger.info("NodeId=" + nodeId + " is disconnecting from the circle...");
+            leave(node);
+            logger.info("NodeId=" + nodeId + " disconnected as node=" + node);
             System.exit(0);
         } catch (Exception e) {
             logger.error("RMI error", e);
-            unbindRMI(ownNodeId);
+            System.exit(1);
         }
     }
 
     @Nullable
-    private static Node getSuccessorNode(int ownNodeId, TreeSet<Integer> nodes) throws Exception {
-        for (int nodeId : nodes) {
-            if (nodeId > ownNodeId) {
-                return getNode(ownNodeId, nodeId);
-            }
-        }
-        int nodeId = nodes.iterator().next();
-        if (nodeId == ownNodeId) {
-            logger.warn("NodeId=" + ownNodeId + " did not find successorNode, except itself");
+    private static Node getSuccessorNode(int nodeId, TreeSet<Integer> nodes) throws Exception {
+        logger.debug("NodeId=" + nodeId + " is searching for successorNode...");
+        int successorNodeId = getSuccessorNodeId(nodeId, nodes);
+        if (successorNodeId == nodeId) {
+            logger.warn("NodeId=" + nodeId + " did not find successorNode, except itself");
             return null;
         }
-        return getNode(ownNodeId, nodeId);
+        logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
+        return getRemoteNode(successorNodeId).getNode();
     }
 
-    private static Node getNode(int ownNodeId, int nodeId) throws Exception {
-        logger.debug("NodeId=" + ownNodeId + " found successorNodeId=" + nodeId);
-        return ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).getNode();
+    private static int getSuccessorNodeId(int targetNodeId, TreeSet<Integer> nodes) {
+        for (int nodeId : nodes) {
+            if (nodeId > targetNodeId) {
+                return nodeId;
+            }
+        }
+        return nodes.iterator().next();
     }
 
-    private static Node register(final int ownNodeId, int port) throws Exception {
+    private static Node register(final int nodeId, int port) throws Exception {
         logger.debug("RMI: registering with port=" + port);
         LocateRegistry.createRegistry(port);
-        Node node = new Node(ownNodeId);
-        Naming.bind(RMI_NODE + ownNodeId, new NodeRemoteImpl(node));
+        Node node = new Node(nodeId);
+        node.getNodes().add(node.getId());
+        Naming.bind(RMI_NODE + nodeId, new NodeRemoteImpl(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                logger.info("Stopping the RMI...");
-                unbindRMI(ownNodeId);
+                logger.info("Stopping the RMI of nodeId=" + nodeId);
+                try {
+                    Naming.unbind(RMI_NODE + nodeId);
+                } catch (Exception e) {
+                    logger.error("Failed to Naming.unbind() for nodeId=" + nodeId, e);
+                }
             }
         });
-        node.getNodes().add(node.getId());
         logger.debug("RMI: Node registered=" + node);
         return node;
     }
 
-    private static void announceJoin(Node ownNode, TreeSet<Integer> nodes) throws Exception {
-        logger.debug("NodeId=" + ownNode.getId() + " announcing join to node.size()=" + nodes.size());
+    private static void announceJoin(Node node, TreeSet<Integer> nodes) throws Exception {
+        logger.debug("NodeId=" + node.getId() + " announcing join to node.size()=" + (nodes.size() - 1));
         for (int nodeId : nodes) {
-            if (nodeId != ownNode.getId()) {
-                ownNode.getNodes().add(nodeId);
-                ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).addNode(ownNode.getId());
-                logger.debug("NodeId=" + ownNode.getId() + " announced join to nodeId=" + nodeId);
+            if (nodeId != node.getId()) {
+                node.getNodes().add(nodeId);
+                getRemoteNode(nodeId).addNode(node.getId());
+                logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
             }
         }
     }
 
-    private static void announceLeave(Node ownNode, TreeSet<Integer> nodes) throws Exception {
-        logger.debug("NodeId=" + ownNode.getId() + " announcing leave to node.size()=" + nodes.size());
+    private static void announceLeave(Node node, TreeSet<Integer> nodes) throws Exception {
+        logger.debug("NodeId=" + node.getId() + " announcing leave to node.size()=" + (nodes.size() - 1));
         for (int nodeId : nodes) {
-            if (nodeId != ownNode.getId()) {
-                ((NodeRemote) Naming.lookup(RMI_NODE + nodeId)).removeNode(ownNode.getId());
-                logger.debug("NodeId=" + ownNode.getId() + " announced leave to nodeId=" + nodeId);
+            if (nodeId != node.getId()) {
+                getRemoteNode(nodeId).removeNode(node.getId());
+                logger.debug("NodeId=" + node.getId() + " announced leave to nodeId=" + nodeId);
             }
         }
     }
 
-    private static void transferItems(Node toNode, Node fromNode) throws Exception {
+    private static void transferItems(Node fromNode, Node toNode) throws Exception {
         logger.debug("Transferring items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
-        List<Item> removedItems = new ArrayList<>();
-        for (Item item : fromNode.getItems().values()) {
-            if (item.getKey() < toNode.getId()) {
-                StorageUtil.write(toNode, item);
-                removedItems.add(item);
-            }
-        }
-        ((NodeRemote) Naming.lookup(RMI_NODE + fromNode.getId())).updateItems(removedItems);
+        getRemoteNode(fromNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
         logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
     }
 
-    private static void leave(Node ownNode) throws Exception {
-        Node successorNode = getSuccessorNode(ownNode.getId(), ownNode.getNodes());
+    private static List<Item> getRemovedItems(Node toNode, Node fromNode) {
+        List<Item> items = new ArrayList<>();
+        for (Item item : fromNode.getItems().values()) {
+            if (item.getKey() <= toNode.getId()) {
+                StorageUtil.write(toNode, item);
+                items.add(item);
+            } else {
+                return items;
+            }
+        }
+        return items;
+    }
+
+    private static void leave(Node node) throws Exception {
+        Node successorNode = getSuccessorNode(node.getId(), node.getNodes());
         if (successorNode != null) {
-            transferItems(successorNode, ownNode);
-            announceLeave(ownNode, ownNode.getNodes());
+            transferItems(node, successorNode);
+            announceLeave(node, node.getNodes());
         }
     }
 
-    private static void unbindRMI(int ownNodeId) {
-        try {
-            Naming.unbind(RMI_NODE + ownNodeId);
-        } catch (Exception e) {
-            logger.error("Naming.unbind error", e);
-        }
+    private static NodeRemote getRemoteNode(int nodeId) throws Exception {
+        return ((NodeRemote) Naming.lookup(RMI_NODE + nodeId));
     }
 }
