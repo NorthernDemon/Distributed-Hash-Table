@@ -15,16 +15,17 @@ public final class ServerLauncher {
     private static NodeLocal nodeLocal = new NodeLocal();
 
     /**
-     * ./server.jar {RMI port},{Own Node ID},[{Existing Node ID}||0, if there are no nodes yet]
+     * ./server.jar [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0, if this is the first node]
      * <p/>
-     * Example: [1099,10,0]
-     * Example: [1100,15,10]
+     * Example: [join,1099,10,0]
+     * Example: [join,1100,15,10]
+     * Example: [leave]
      *
      * @param args
      */
     public static void main(String[] args) throws Exception {
         logger.info("Server Node is ready for request>>");
-        logger.info("Example: [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0]");
+        logger.info("Example: [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0, if this is the first node]");
         logger.info("Example: [join,1099,10,0]");
         logger.info("Example: [join,1100,15,10]");
         logger.info("Example: [leave]");

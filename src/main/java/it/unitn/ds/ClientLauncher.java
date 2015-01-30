@@ -9,10 +9,10 @@ public final class ClientLauncher {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * ./client.jar {operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}
+     * ./client.jar [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]
      * <p/>
-     * Example: [1099,10,0]
-     * Example: [1100,15,10]
+     * Example: [get,10,12]
+     * Example: [update,15,12,New Value Item]
      *
      * @param args
      */
