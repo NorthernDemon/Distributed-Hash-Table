@@ -62,7 +62,6 @@ public final class ServerLauncher {
             logger.info("NodeId=" + nodeId + " is disconnecting from the circle...");
             leave(node);
             logger.info("NodeId=" + nodeId + " disconnected as node=" + node);
-            System.exit(0);
         } catch (Exception e) {
             logger.error("RMI error", e);
             System.exit(1);
@@ -74,7 +73,7 @@ public final class ServerLauncher {
         logger.debug("NodeId=" + nodeId + " is searching for successorNode...");
         int successorNodeId = getSuccessorNodeId(nodeId, nodes);
         if (successorNodeId == nodeId) {
-            logger.warn("NodeId=" + nodeId + " did not find successorNode, except itself");
+            logger.debug("NodeId=" + nodeId + " did not find successorNode, except itself");
             return null;
         }
         logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
@@ -133,12 +132,12 @@ public final class ServerLauncher {
 
     private static void transferItems(Node fromNode, Node toNode) throws Exception {
         if (fromNode.getItems().isEmpty()) {
-            logger.debug("Nothing to transfer fromNode=" + fromNode);
+            logger.debug("Nothing to transfer fromNode=" + fromNode + " toNode=" + toNode);
             return;
         }
-        logger.debug("Transferring items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
+        logger.debug("Transferring items fromNode=" + fromNode + " toNode=" + toNode);
         getRemoteNode(fromNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
-        logger.debug("Transferred items fromNode=" + fromNode.getId() + " toNode=" + toNode.getId());
+        logger.debug("Transferred items fromNode=" + fromNode + " toNode=" + toNode);
     }
 
     private static List<Item> getRemovedItems(Node toNode, Node fromNode) {
