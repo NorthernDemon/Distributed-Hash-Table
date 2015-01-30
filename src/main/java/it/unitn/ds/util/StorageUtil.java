@@ -61,11 +61,10 @@ public abstract class StorageUtil {
     }
 
     private static Map<Integer, Item> updateNodeItems(Node node, List<Item> newItems) {
-        Map<Integer, Item> items = node.getItems();
         for (Item item : newItems) {
-            items.put(item.getKey(), item);
+            node.getItems().put(item.getKey(), item);
         }
-        return items;
+        return node.getItems();
     }
 
     /**

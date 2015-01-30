@@ -78,11 +78,14 @@ public abstract class RemoteUtil {
             return;
         }
         logger.debug("Transferring items fromNode=" + fromNode + " toNode=" + toNode);
-        getRemoteNode(fromNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
+        getRemoteNode(toNode.getId()).updateItems(getRemovedItems(toNode, fromNode));
         logger.debug("Transferred items fromNode=" + fromNode + " toNode=" + toNode);
     }
 
     private static List<Item> getRemovedItems(Node toNode, Node fromNode) {
+        if (toNode.getId() < fromNode.getId()) {
+            return new ArrayList<>(fromNode.getItems().values());
+        }
         List<Item> items = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
             if (item.getKey() <= toNode.getId()) {
@@ -91,7 +94,6 @@ public abstract class RemoteUtil {
                 break;
             }
         }
-        StorageUtil.write(toNode, items);
         return items;
     }
 
@@ -137,7 +139,7 @@ public abstract class RemoteUtil {
      */
     public static int getNodeIdForItemKey(int key, TreeSet<Integer> nodes) {
         for (int nodeId : nodes) {
-            if (nodeId > key) {
+            if (nodeId >= key) {
                 return nodeId;
             }
         }
