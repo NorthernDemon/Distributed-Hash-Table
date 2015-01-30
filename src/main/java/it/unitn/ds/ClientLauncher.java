@@ -16,7 +16,7 @@ public final class ClientLauncher {
      *
      * @param args
      */
-    public static void main(String args[]) throws Exception {
+    public static void main(String args[]) {
         logger.info("Client is ready for request>>");
         logger.info("Example: [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]");
         logger.info("Example: [get,10,12]");
@@ -24,10 +24,23 @@ public final class ClientLauncher {
         InputUtil.readInput(ClientLauncher.class.getName());
     }
 
+    /**
+     * Get item given node id and item key
+     *
+     * @param nodeId of the known node, does not have to contain item key
+     * @param key    of the item
+     */
     public static void get(int nodeId, int key) {
         logger.info("Get from nodeId=" + nodeId + ", key=" + key);
     }
 
+    /**
+     * Update item given node id and item key
+     *
+     * @param nodeId of the known node, does not have to contain item key
+     * @param key    of the item
+     * @param value  new item value
+     */
     public static void update(int nodeId, int key, String value) {
         logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
         if (value.contains(",")) {

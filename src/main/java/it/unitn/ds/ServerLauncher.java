@@ -23,7 +23,7 @@ public final class ServerLauncher {
      *
      * @param args
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         logger.info("Server Node is ready for request>>");
         logger.info("Example: [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0, if this is the first node]");
         logger.info("Example: [join,1099,10,0]");
@@ -32,6 +32,14 @@ public final class ServerLauncher {
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 
+    /**
+     * New Node will join the circle of trust based on its id and known existing node id
+     * If this is the first node joining, existing id = 0
+     *
+     * @param port           RMI port of the new node
+     * @param nodeId         id of the current node to join
+     * @param existingNodeId to fetch data from, 0 if current node is first
+     */
     public static void join(int port, int nodeId, int existingNodeId) {
         try {
             if (nodeLocal.getNode() != null) {
@@ -59,6 +67,9 @@ public final class ServerLauncher {
         }
     }
 
+    /**
+     * Current Node will leave the circle of trust
+     */
     public static void leave() {
         try {
             if (nodeLocal.getNode() == null) {
