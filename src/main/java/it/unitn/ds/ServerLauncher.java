@@ -12,20 +12,20 @@ public final class ServerLauncher {
     private static NodeLocal nodeLocal = new NodeLocal();
 
     /**
-     * ./server.jar [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0, if this is the first node]
+     * ./server.jar {methodName},{RMI port},{Own Node ID},{Existing Node ID or 0, if this is the first node}
      * <p/>
-     * Example: [join,1099,10,0]
-     * Example: [join,1100,15,10]
-     * Example: [leave]
+     * Example: join,1099,10,0
+     * Example: join,1100,15,10
+     * Example: leave
      *
      * @param args
      */
     public static void main(String[] args) {
         logger.info("Server Node is ready for request>>");
-        logger.info("Example: [{methodName},{RMI port},{Own Node ID},{Existing Node ID}||0, if this is the first node]");
-        logger.info("Example: [join,1099,10,0]");
-        logger.info("Example: [join,1100,15,10]");
-        logger.info("Example: [leave]");
+        logger.info("Example: {methodName},{RMI port},{Own Node ID},{Existing Node ID or 0, if this is the first node}");
+        logger.info("Example: join,1099,10,0");
+        logger.info("Example: join,1100,15,10");
+        logger.info("Example: leave");
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 
@@ -38,18 +38,14 @@ public final class ServerLauncher {
      * @param existingNodeId to fetch data from, 0 if current node is first
      */
     public static void join(int port, int nodeId, int existingNodeId) {
+        if (nodeLocal.isConnected()) {
+            logger.warn("Cannot join without leaving first!");
+            return;
+        }
         try {
-            if (nodeLocal.isConnected()) {
-                logger.warn("Cannot join without leaving first!");
-                return;
-            }
-            if (existingNodeId == 0) {
-                nodeLocal.joinFirst(port, nodeId);
-            } else {
-                nodeLocal.join(port, nodeId, existingNodeId);
-            }
+            nodeLocal.join(port, nodeId, existingNodeId);
         } catch (Exception e) {
-            logger.error("RMI error", e);
+            logger.error("RMI failed miserably", e);
             System.exit(1);
         }
     }
@@ -58,14 +54,14 @@ public final class ServerLauncher {
      * Current Node will leave the circle of trust
      */
     public static void leave() {
+        if (!nodeLocal.isConnected()) {
+            logger.warn("Cannot leave without joining first!");
+            return;
+        }
         try {
-            if (!nodeLocal.isConnected()) {
-                logger.warn("Cannot leave without joining first!");
-                return;
-            }
             nodeLocal.leave();
         } catch (Exception e) {
-            logger.error("RMI error", e);
+            logger.error("RMI failed miserably", e);
             System.exit(1);
         }
     }

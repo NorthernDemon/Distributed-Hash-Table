@@ -12,18 +12,18 @@ public final class ClientLauncher {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * ./client.jar [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]
+     * ./client.jar {methodName},{operation GET|UPDATE},{Node ID},{key},{value}
      * <p/>
-     * Example: [get,10,12]
-     * Example: [update,15,12,New Value Item]
+     * Example: get,10,12
+     * Example: update,15,12,New Value Item
      *
      * @param args
      */
     public static void main(String args[]) {
         logger.info("Client is ready for request>>");
-        logger.info("Example: [{methodName},{operation GET|UPDATE},{Node ID},{key},{value - OPTIONAL}]");
-        logger.info("Example: [get,10,12]");
-        logger.info("Example: [update,15,12,New Value Item]");
+        logger.info("Example: {methodName},{operation GET|UPDATE},{Node ID},{key},{value}");
+        logger.info("Example: get,10,12");
+        logger.info("Example: update,15,12,New Value Item");
         InputUtil.readInput(ClientLauncher.class.getName());
     }
 
@@ -35,11 +35,10 @@ public final class ClientLauncher {
      */
     public static void get(int nodeId, int key) {
         try {
-            logger.info("Get from nodeId=" + nodeId + " item with key=" + key);
             Item item = RemoteUtil.getRemoteNode(nodeId).getItem(key);
             logger.info("Got item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
-            logger.error("RMI error", e);
+            logger.error("RMI failed miserably", e);
             System.exit(1);
         }
     }
@@ -57,11 +56,10 @@ public final class ClientLauncher {
             return;
         }
         try {
-            logger.info("Update nodeId=" + nodeId + ", key=" + key + ", update=" + value);
             Item item = RemoteUtil.getRemoteNode(nodeId).updateItem(key, value);
             logger.info("Updated item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
-            logger.error("RMI error", e);
+            logger.error("RMI failed miserably", e);
             System.exit(1);
         }
     }

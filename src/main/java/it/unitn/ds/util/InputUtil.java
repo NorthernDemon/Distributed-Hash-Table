@@ -27,7 +27,7 @@ public abstract class InputUtil {
             while (scanner.hasNext()) {
                 String[] commands = scanner.nextLine().split(",");
                 Object[] params = new Object[commands.length - 1];
-                List<Class<?>> methodParameterTypes = new ArrayList<>();
+                List<Class<?>> methodParameterTypes = new ArrayList<>(commands.length);
                 // TODO find a cleaner way to determine the parameter type
                 for (int i = 1; i < commands.length; i++) {
                     try {
@@ -37,9 +37,9 @@ public abstract class InputUtil {
                         params[i - 1] = commands[i];
                         methodParameterTypes.add(String.class);
                     }
-                    logger.debug("Param Type | " + params[i - 1].getClass().getName());
+                    logger.debug("Parameter type: " + params[i - 1].getClass().getName());
                 }
-                logger.debug("Calling | " + commands[0] + " | " + Arrays.toString(params));
+                logger.debug("Calling method with parameters: " + commands[0] + " | " + Arrays.toString(params));
                 Class<?> aClass = Class.forName(className);
                 Method method = aClass.getMethod(commands[0], convertListToArray(methodParameterTypes));
                 method.invoke(null, params);

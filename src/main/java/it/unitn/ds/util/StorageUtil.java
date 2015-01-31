@@ -8,12 +8,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -32,16 +29,16 @@ public abstract class StorageUtil {
      * @param node responsible for item
      */
     public static Collection<Item> write(Node node) {
+        Collection<Item> items = node.getItems().values();
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
-            for (Item item : node.getItems().values()) {
-                logger.debug("Storage write item=" + item);
+            for (Item item : items) {
                 writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + "\n");
+                logger.debug("Storage of node=" + node.getId() + " wrote an item=" + item);
             }
-            return node.getItems().values();
         } catch (Exception e) {
-            logger.error("Failed to write items=" + Arrays.toString(node.getItems().values().toArray()) + " for node=" + node, e);
+            logger.error("Failed to write items of the node=" + node, e);
         }
-        return new ArrayList<>();
+        return items;
     }
 
     /**
@@ -58,25 +55,30 @@ public abstract class StorageUtil {
                 if (line.startsWith(key + SEPARATOR)) {
                     Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
                     Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
-                    logger.debug("Storage read item=" + item);
+                    logger.debug("Storage of node=" + nodeId + " read an item=" + item);
                     return item;
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Failed to read item with key=" + key + " for nodeId=" + nodeId, e);
         }
         return null;
     }
 
-    private static String getFileName(int nodeId) {
-        return "storage/Node-" + nodeId + ".csv";
-    }
-
+    /**
+     * Removes file storage of the given node
+     *
+     * @param nodeId id of the node to remove its CSV file
+     */
     public static void removeFile(int nodeId) {
         try {
             Files.delete(Paths.get(getFileName(nodeId)));
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Failed to remove file for nodeId=" + nodeId, e);
         }
+    }
+
+    private static String getFileName(int nodeId) {
+        return "storage/Node-" + nodeId + ".csv";
     }
 }
