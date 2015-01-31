@@ -118,12 +118,11 @@ public final class NodeLocal {
     }
 
     private int getSuccessorNodeId(int targetNodeId, TreeSet<Integer> nodes) {
-        for (int nodeId : nodes) {
-            if (nodeId > targetNodeId) {
-                return nodeId;
-            }
+        Integer higher = nodes.higher(targetNodeId);
+        if (higher == null) {
+            return nodes.iterator().next();
         }
-        return nodes.iterator().next();
+        return higher;
     }
 
     /**

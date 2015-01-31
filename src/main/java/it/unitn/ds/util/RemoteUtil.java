@@ -41,11 +41,10 @@ public abstract class RemoteUtil {
      * @return node id
      */
     public static int getNodeIdForItemKey(int key, TreeSet<Integer> nodes) {
-        for (int nodeId : nodes) {
-            if (nodeId >= key) {
-                return nodeId;
-            }
+        Integer ceiling = nodes.ceiling(key);
+        if (ceiling == null) {
+            return nodes.iterator().next();
         }
-        return nodes.iterator().next();
+        return ceiling;
     }
 }
