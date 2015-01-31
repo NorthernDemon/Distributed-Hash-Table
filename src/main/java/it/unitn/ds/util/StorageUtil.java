@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Iterator;
@@ -72,7 +73,10 @@ public abstract class StorageUtil {
      */
     public static void removeFile(int nodeId) {
         try {
-            Files.delete(Paths.get(getFileName(nodeId)));
+            Path path = Paths.get(getFileName(nodeId));
+            if (Files.exists(path)) {
+                Files.delete(path);
+            }
         } catch (Exception e) {
             logger.error("Failed to remove file for nodeId=" + nodeId, e);
         }
