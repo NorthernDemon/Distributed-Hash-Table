@@ -63,4 +63,21 @@ public final class ClientLauncher {
             System.exit(1);
         }
     }
+
+    /**
+     * View topology of the circle from the given node id
+     *
+     * @param targetNodeId of the known node
+     */
+    public static void view(int targetNodeId) {
+        try {
+            for (int nodeId : RemoteUtil.getRemoteNode(targetNodeId).getNodes()) {
+                logger.debug("Node=" + RemoteUtil.getRemoteNode(nodeId).getNode());
+            }
+            logger.info("Viewed topology from targetNodeId=" + targetNodeId);
+        } catch (Exception e) {
+            logger.error("RMI failed miserably", e);
+            System.exit(1);
+        }
+    }
 }
