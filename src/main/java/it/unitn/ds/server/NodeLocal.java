@@ -61,10 +61,6 @@ public final class NodeLocal {
      * @throws Exception in case of RMI error
      */
     public void leave() throws Exception {
-        if (node == null) {
-            logger.info("Node already left.");
-            return;
-        }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the circle...");
         Node successorNode = getSuccessorNode(node.getId(), node.getNodes());
         if (successorNode != null) {
@@ -95,7 +91,9 @@ public final class NodeLocal {
             public void run() {
                 logger.info("Auto-leaving nodeId=" + nodeId);
                 try {
-                    leave();
+                    if (isConnected()) {
+                        leave();
+                    }
                 } catch (Exception e) {
                     logger.error("Failed to leave node", e);
                 }
