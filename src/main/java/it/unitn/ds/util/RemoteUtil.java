@@ -108,10 +108,17 @@ public abstract class RemoteUtil {
      * @return list of items for toNode
      */
     private static List<Item> getTransferItems(Node fromNode, Node toNode) {
+        boolean isZeroCrossed = fromNode.getId() < toNode.getId();
         List<Item> items = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
             if (item.getKey() <= toNode.getId()) {
-                items.add(item);
+                if (isZeroCrossed) {
+                    if (item.getKey() > fromNode.getId()) {
+                        items.add(item);
+                    }
+                } else {
+                    items.add(item);
+                }
             } else {
                 return items;
             }
