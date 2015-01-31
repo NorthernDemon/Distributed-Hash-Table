@@ -84,6 +84,7 @@ public final class NodeLocal {
      */
     private Node register(String host, final int nodeId, int port) throws Exception {
         logger.debug("RMI registering with port=" + port);
+        System.setProperty("java.rmi.server.hostname", host);
         registry = LocateRegistry.createRegistry(port);
         Node node = new Node(nodeId, host);
         Naming.bind(RemoteUtil.getRMI(host, nodeId), new NodeRemoteImpl(node));

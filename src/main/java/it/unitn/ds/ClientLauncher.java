@@ -3,7 +3,6 @@ package it.unitn.ds;
 import it.unitn.ds.server.Item;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
-import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,10 +52,6 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(String host, int nodeId, int key, String value) {
-        if (value.contains(StorageUtil.SEPARATOR)) {
-            logger.warn("Cannot store \"" + StorageUtil.SEPARATOR + "\" in value field... yet!");
-            return;
-        }
         try {
             Item item = RemoteUtil.getRemoteNode(host, nodeId).updateItem(key, value);
             logger.info("Updated item=" + item + " from nodeId=" + nodeId);

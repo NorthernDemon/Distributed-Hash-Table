@@ -22,7 +22,7 @@ public abstract class StorageUtil {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public static final String SEPARATOR = ",";
+    private static final String SEPARATOR = ",";
 
     /**
      * Creates/Updates list of new items into CSV file in format: {key},{value},{version}
