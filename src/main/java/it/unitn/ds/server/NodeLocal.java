@@ -47,7 +47,7 @@ public final class NodeLocal {
             Map<Integer, String> nodes = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId).getNodes();
             Node successorNode = getSuccessorNode(nodeId, nodes);
             node = register(host, nodeId, port);
-            node.setNodes(nodes);
+            node.getNodes().putAll(nodes);
             node.getNodes().put(node.getId(), node.getHost());
             announceJoin();
             transferItems(successorNode);

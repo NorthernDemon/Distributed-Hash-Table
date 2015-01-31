@@ -7,11 +7,11 @@ import java.util.Objects;
 
 public final class Item implements Serializable {
 
-    private int key;
+    private final int key;
 
-    private String value;
+    private final String value;
 
-    private int version;
+    private final int version;
 
     public Item(int key, String value, int version) {
         this.value = value;
@@ -23,24 +23,12 @@ public final class Item implements Serializable {
         return key;
     }
 
-    public void setKey(int key) {
-        this.key = key;
-    }
-
     public String getValue() {
         return value;
     }
 
-    public void setValue(String value) {
-        this.value = value;
-    }
-
     public int getVersion() {
         return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 
     @Override

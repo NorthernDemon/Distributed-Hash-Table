@@ -10,13 +10,13 @@ import java.util.TreeMap;
 
 public final class Node implements Serializable {
 
-    private int id;
+    private final int id;
 
-    private String host;
+    private final String host;
 
-    private Map<Integer, Item> items = new TreeMap<>();
+    private final Map<Integer, Item> items = new TreeMap<>();
 
-    private Map<Integer, String> nodes = new TreeMap<>();
+    private final Map<Integer, String> nodes = new TreeMap<>();
 
     public Node(int id, String host) {
         this.id = id;
@@ -27,32 +27,16 @@ public final class Node implements Serializable {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public String getHost() {
         return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
     }
 
     public Map<Integer, Item> getItems() {
         return items;
     }
 
-    public void setItems(Map<Integer, Item> items) {
-        this.items = items;
-    }
-
     public Map<Integer, String> getNodes() {
         return nodes;
-    }
-
-    public void setNodes(Map<Integer, String> nodes) {
-        this.nodes = nodes;
     }
 
     @Override
