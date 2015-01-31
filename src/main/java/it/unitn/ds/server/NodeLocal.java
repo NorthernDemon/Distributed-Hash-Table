@@ -157,6 +157,9 @@ public final class NodeLocal {
 
     /**
      * Returns a list of items, that should be transferred from successor node to current node
+     * <p/>
+     * If new node appears the last and successor it the first (zero-crossing)
+     * it transfer only items between current node and its predecessor
      *
      * @param successorNode from which to transfer
      * @return list of items for current node

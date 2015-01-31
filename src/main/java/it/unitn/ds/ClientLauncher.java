@@ -12,7 +12,7 @@ public final class ClientLauncher {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * ./client.jar {methodName},{operation GET|UPDATE},{Node ID},{key},{value}
+     * ./client.jar {methodName},{Node ID},{key},{value}
      * <p/>
      * Example: get,10,12
      * Example: update,15,12,New Value Item
@@ -21,7 +21,7 @@ public final class ClientLauncher {
      */
     public static void main(String args[]) {
         logger.info("Client is ready for request>>");
-        logger.info("Example: {methodName},{operation GET|UPDATE},{Node ID},{key},{value}");
+        logger.info("Example: {methodName},{Node ID},{key},{value}");
         logger.info("Example: get,10,12");
         logger.info("Example: update,15,12,New Value Item");
         InputUtil.readInput(ClientLauncher.class.getName());

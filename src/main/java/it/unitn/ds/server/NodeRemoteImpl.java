@@ -70,12 +70,12 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
     @Override
     public Item getItem(int key) throws RemoteException {
         logger.debug("Get item request with key=" + key);
-        if (node.getItems().containsKey(key)) {
+        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
+        if (nodeId == node.getId()) {
             Item item = node.getItems().get(key);
             logger.debug("Found item=" + item);
             return item;
         } else {
-            int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
             return RemoteUtil.getRemoteNode(nodeId).getItem(key);
         }
@@ -84,14 +84,14 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
         logger.debug("Update item request with key=" + key);
-        if (node.getItems().containsKey(key)) {
+        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
+        if (nodeId == node.getId()) {
             Item item = new Item(key, value, 0);
             node.getItems().put(item.getKey(), item);
             StorageUtil.write(node);
             logger.debug("Found item=" + item);
             return item;
         } else {
-            int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
             return RemoteUtil.getRemoteNode(nodeId).updateItem(key, value);
         }
