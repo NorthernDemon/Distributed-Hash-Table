@@ -9,7 +9,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Map;
 
 public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
 
@@ -28,23 +28,23 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
     }
 
     @Override
-    public TreeSet<Integer> getNodes() throws RemoteException {
-        logger.debug("Get nodes=" + Arrays.toString(node.getNodes().toArray()));
+    public Map<Integer, String> getNodes() throws RemoteException {
+        logger.debug("Get hosts=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         return node.getNodes();
     }
 
     @Override
-    public void addNode(int nodeId) throws RemoteException {
+    public void addNode(int nodeId, String host) throws RemoteException {
         logger.debug("Add node request with node=" + nodeId);
-        node.getNodes().add(nodeId);
-        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().toArray()));
+        node.getNodes().put(nodeId, host);
+        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
     @Override
     public void removeNode(int nodeId) throws RemoteException {
         logger.debug("Remove node request with node=" + nodeId);
         node.getNodes().remove(nodeId);
-        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().toArray()));
+        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
     @Override
@@ -77,7 +77,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(nodeId).getItem(key);
+            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).getItem(key);
         }
     }
 
@@ -93,7 +93,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(nodeId).updateItem(key, value);
+            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).updateItem(key, value);
         }
     }
 }

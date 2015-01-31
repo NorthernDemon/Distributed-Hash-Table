@@ -14,7 +14,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Map;
 
 public final class NodeLocal {
 
@@ -23,27 +23,33 @@ public final class NodeLocal {
     @Nullable
     private Node node;
 
+    @Nullable
     private Registry registry;
 
     /**
      * Signals current node to join the circle of trust
      *
-     * @param port           RMI port
-     * @param nodeId         id for new current node
-     * @param existingNodeId if of known existing node, or 0 if current node is the first
+     * @param host             network host
+     * @param port             RMI port
+     * @param nodeId           id for new current node
+     * @param existingNodeHost to fetch data from, none if current node is first
+     * @param existingNodeId   if of known existing node, or 0 if current node is the first
      * @throws Exception in case of RMI error
      */
-    public void join(int port, int nodeId, int existingNodeId) throws Exception {
+    public void join(String host, int port, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
         if (existingNodeId == 0) {
             logger.info("NodeId=" + nodeId + " is the first node in circle");
-            register(nodeId, port);
+            node = register(host, nodeId, port);
+            node.getNodes().put(node.getId(), node.getHost());
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            TreeSet<Integer> nodes = RemoteUtil.getRemoteNode(existingNodeId).getNodes();
+            Map<Integer, String> nodes = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId).getNodes();
             Node successorNode = getSuccessorNode(nodeId, nodes);
-            register(nodeId, port);
-            announceJoin(successorNode.getNodes());
+            node = register(host, nodeId, port);
+            node.setNodes(nodes);
+            node.getNodes().put(node.getId(), node.getHost());
+            announceJoin();
             transferItems(successorNode);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
@@ -65,7 +71,7 @@ public final class NodeLocal {
             copyItems(successorNode);
             announceLeave();
         }
-        Naming.unbind(RemoteUtil.RMI_NODE + node.getId());
+        Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
         UnicastRemoteObject.unexportObject(registry, true);
         StorageUtil.removeFile(node.getId());
         logger.info("NodeId=" + node.getId() + " disconnected.");
@@ -80,12 +86,11 @@ public final class NodeLocal {
      * @param port   RMI port
      * @throws Exception of shutdown hook
      */
-    private void register(final int nodeId, int port) throws Exception {
+    private Node register(String host, final int nodeId, int port) throws Exception {
         logger.debug("RMI registering with port=" + port);
         registry = LocateRegistry.createRegistry(port);
-        node = new Node(nodeId);
-        node.getNodes().add(node.getId());
-        Naming.bind(RemoteUtil.RMI_NODE + nodeId, new NodeRemoteImpl(node));
+        Node node = new Node(nodeId, host);
+        Naming.bind(RemoteUtil.getRMI(host, nodeId), new NodeRemoteImpl(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 logger.info("Auto-leaving nodeId=" + nodeId);
@@ -97,6 +102,7 @@ public final class NodeLocal {
             }
         });
         logger.debug("RMI Node registered=" + node);
+        return node;
     }
 
     /**
@@ -107,22 +113,23 @@ public final class NodeLocal {
      * @return successor node of the given node id
      */
     @Nullable
-    private Node getSuccessorNode(int nodeId, TreeSet<Integer> nodes) throws RemoteException {
+    private Node getSuccessorNode(int nodeId, Map<Integer, String> nodes) throws RemoteException {
         int successorNodeId = getSuccessorNodeId(nodeId, nodes);
         if (successorNodeId == nodeId) {
             logger.debug("NodeId=" + nodeId + " did not find successorNode, except itself");
             return null;
         }
         logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
-        return RemoteUtil.getRemoteNode(successorNodeId).getNode();
+        return RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId).getNode();
     }
 
-    private int getSuccessorNodeId(int targetNodeId, TreeSet<Integer> nodes) {
-        Integer higher = nodes.higher(targetNodeId);
-        if (higher == null) {
-            return nodes.iterator().next();
+    private int getSuccessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
+        for (int nodeId : nodes.keySet()) {
+            if (nodeId > targetNodeId) {
+                return nodeId;
+            }
         }
-        return higher;
+        return nodes.keySet().iterator().next();
     }
 
     /**
@@ -135,7 +142,7 @@ public final class NodeLocal {
             logger.debug("Nothing to copy from node=" + node + " successorNode=" + successorNode);
             return;
         }
-        RemoteUtil.getRemoteNode(successorNode.getId()).updateItems(new ArrayList<>(node.getItems().values()));
+        RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId()).updateItems(new ArrayList<>(node.getItems().values()));
         logger.debug("Copied items node=" + node + " successorNode=" + successorNode);
     }
 
@@ -150,8 +157,8 @@ public final class NodeLocal {
             return;
         }
         List<Item> items = getTransferItems(successorNode);
-        RemoteUtil.getRemoteNode(node.getId()).updateItems(items);
-        RemoteUtil.getRemoteNode(successorNode.getId()).removeItems(items);
+        RemoteUtil.getRemoteNode(node.getHost(), node.getId()).updateItems(items);
+        RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId()).removeItems(items);
         logger.debug("Transferred items successorNode=" + successorNode + " node=" + node + " items=" + Arrays.toString(items.toArray()));
     }
 
@@ -184,15 +191,12 @@ public final class NodeLocal {
     }
 
     /**
-     * Announce JOIN operation to the set of nodes and updates internal set of current node
-     *
-     * @param nodes announcement receivers
+     * Announce JOIN operation to the set of nodes
      */
-    private void announceJoin(TreeSet<Integer> nodes) throws RemoteException {
-        logger.debug("NodeId=" + node.getId() + " announcing join to nodes=" + Arrays.toString(nodes.toArray()));
-        for (int nodeId : nodes) {
-            node.getNodes().add(nodeId);
-            RemoteUtil.getRemoteNode(nodeId).addNode(node.getId());
+    private void announceJoin() throws RemoteException {
+        logger.debug("NodeId=" + node.getId() + " announcing join to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        for (int nodeId : node.getNodes().keySet()) {
+            RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).addNode(node.getId(), node.getHost());
             logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
         }
     }
@@ -201,10 +205,10 @@ public final class NodeLocal {
      * Announce LEAVE operation to the set of known nodes
      */
     private void announceLeave() throws RemoteException {
-        logger.debug("NodeId=" + node.getId() + " announcing leave to nodes=" + Arrays.toString(node.getNodes().toArray()));
-        for (int nodeId : node.getNodes()) {
+        logger.debug("NodeId=" + node.getId() + " announcing leave to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        for (int nodeId : node.getNodes().keySet()) {
             if (nodeId != node.getId()) {
-                RemoteUtil.getRemoteNode(nodeId).removeNode(node.getId());
+                RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).removeNode(node.getId());
                 logger.debug("NodeId=" + node.getId() + " announced leave to nodeId=" + nodeId);
             }
         }
