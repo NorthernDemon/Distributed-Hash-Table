@@ -203,6 +203,7 @@ public final class NodeLocal {
         List<Item> items = new ArrayList<>();
         for (Item item : successorNode.getItems().values()) {
             if (item.getKey() <= node.getId()) {
+                // check if item (e.g. 5) falls in range of highest-identified node (e.g.20) or lowest (e.g. 5)
                 if (isZeroCrossed) {
                     if (item.getKey() > successorNode.getId()) {
                         items.add(item);
