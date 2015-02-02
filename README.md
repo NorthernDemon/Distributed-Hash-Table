@@ -17,10 +17,6 @@ Requirements: *JDK 7*, *Maven*
 ####To run inside of IDE:
     - run main ServerLauncher.java
     - run main ClientLauncher.java
-    
-Architecture Diagram
--------
-![Diagram](/diagrams/Architecture_Diagram.png)
 
 Authors
 -------
