@@ -88,6 +88,15 @@ public abstract class RemoteUtil {
         return nodes.keySet().iterator().next();
     }
 
+    private static int getPredecessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
+        for (int nodeId : nodes.keySet()) {
+            if (nodeId <= targetNodeId) {
+                return nodeId;
+            }
+        }
+        return nodes.keySet().iterator().next();
+    }
+
     /**
      * Copies items from current node to successor node
      *
@@ -116,7 +125,7 @@ public abstract class RemoteUtil {
      * Transfers items from successor node to current node, removes items of fromNode
      *
      * @param fromNode from which to transfer
-     * @param toNode   from which to transfer
+     * @param toNode   to which to transfer
      */
     public static void transferItems(Node fromNode, Node toNode) throws RemoteException {
         if (fromNode.getItems().isEmpty()) {
@@ -146,24 +155,16 @@ public abstract class RemoteUtil {
      * it transfer only items between current node and its predecessor
      *
      * @param fromNode from which to transfer
-     * @param toNode   from which to transfer
+     * @param toNode   to which to transfer
      * @return list of items for current node
      */
     private static List<Item> getTransferItems(Node fromNode, Node toNode) {
-        boolean isZeroCrossed = fromNode.getId() < toNode.getId();
+        int predecessorNodeId = getPredecessorNodeId(toNode.getId(), toNode.getNodes());
         List<Item> items = new ArrayList<>();
         for (Item item : fromNode.getItems().values()) {
-            if (item.getKey() <= toNode.getId()) {
-                // check if item (e.g. 5) falls in range of highest-identified node (e.g.20) or lowest (e.g. 5)
-                if (isZeroCrossed) {
-                    if (item.getKey() > fromNode.getId()) {
-                        items.add(item);
-                    }
-                } else {
-                    items.add(item);
-                }
-            } else {
-                return items;
+            // check if item (e.g. 5) falls in range of highest-identified node (e.g.20) or lowest (e.g. 5)
+            if (toNode.getId() >= item.getKey() && item.getKey() > predecessorNodeId) {
+                items.add(item);
             }
         }
         return items;
@@ -205,7 +206,8 @@ public abstract class RemoteUtil {
     /**
      * Returns RMI string of the node for given host
      *
-     * @param host network host
+     * @param host   network host
+     * @param nodeId id of the current node
      * @return default lookup string
      */
     public static String getRMI(String host, int nodeId) {
