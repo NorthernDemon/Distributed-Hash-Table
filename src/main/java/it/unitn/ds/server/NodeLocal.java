@@ -11,10 +11,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class NodeLocal {
 
@@ -30,16 +27,15 @@ public final class NodeLocal {
      * Signals current node to join the circle of trust
      *
      * @param host             network host
-     * @param port             RMI port
      * @param nodeId           id for new current node
      * @param existingNodeHost to fetch data from, none if current node is first
      * @param existingNodeId   if of known existing node, or 0 if current node is the first
      * @throws Exception in case of RMI error
      */
-    public void join(String host, int port, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
+    public void join(String host, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
         if (existingNodeId == 0) {
             logger.info("NodeId=" + nodeId + " is the first node in circle");
-            node = register(host, nodeId, port);
+            node = register(host, nodeId, 1099);
             node.getNodes().put(node.getId(), node.getHost());
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
@@ -51,7 +47,7 @@ public final class NodeLocal {
             }
             Map<Integer, String> nodes = remoteNode.getNodes();
             Node successorNode = getSuccessorNode(nodeId, nodes);
-            node = register(host, nodeId, port);
+            node = register(host, nodeId, new Random().nextInt(10000) + 1100);
             node.getNodes().putAll(nodes);
             node.getNodes().put(node.getId(), node.getHost());
             announceJoin();
