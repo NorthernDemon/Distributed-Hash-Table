@@ -56,7 +56,7 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Returns successor node clockwise in circle of the given node id in the set of nodes
+     * Returns successor node clockwise in the ring of the given node id in the set of nodes
      *
      * @param nodeId predecessor node id
      * @param nodes  set of possible successors

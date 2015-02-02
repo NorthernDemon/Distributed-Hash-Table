@@ -26,7 +26,7 @@ public final class NodeLocal {
     private Registry registry;
 
     /**
-     * Signals current node to join the circle of trust
+     * Signals current node to join the ring
      *
      * @param host             network host
      * @param nodeId           id for new current node
@@ -36,10 +36,9 @@ public final class NodeLocal {
      */
     public void join(String host, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
         if (existingNodeId == 0) {
-            logger.info("NodeId=" + nodeId + " is the first node in circle");
+            logger.info("NodeId=" + nodeId + " is the first node in ring");
             LocateRegistry.createRegistry(1099);
             node = register(host, nodeId);
-            node.addNodes();
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
@@ -51,7 +50,7 @@ public final class NodeLocal {
             Map<Integer, String> nodes = remoteNode.getNodes();
             Node successorNode = RemoteUtil.getSuccessorNode(nodeId, nodes);
             node = register(host, nodeId);
-            node.addNodes(nodes);
+            node.putNodes(nodes);
             announceJoin();
             if (successorNode != null) {
                 RemoteUtil.transferItems(successorNode, node);
@@ -61,12 +60,12 @@ public final class NodeLocal {
     }
 
     /**
-     * Signals current node to leave the circle of trust
+     * Signals current node to leave the ring
      *
      * @throws Exception in case of RMI error
      */
     public void leave() throws Exception {
-        logger.info("NodeId=" + node.getId() + " is disconnecting from the circle...");
+        logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
         Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
         if (successorNode != null) {
             RemoteUtil.copyItems(node, successorNode);

@@ -5,6 +5,11 @@ import com.google.common.base.MoreObjects;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Node is placed in the ring based on its id (might be the same as item key)
+ * Nodes store items, knows all the other nodes in the ring and can communicate
+ * Responsible node has id >= item key
+ */
 public final class Node implements Serializable {
 
     private final int id;
@@ -24,15 +29,11 @@ public final class Node implements Serializable {
     public Node(int id, String host) {
         this.id = id;
         this.host = host;
-    }
-
-    public void addNodes(Map<Integer, String> existingNodes) {
-        addNodes();
-        nodes.putAll(existingNodes);
-    }
-
-    public void addNodes() {
         nodes.put(id, host);
+    }
+
+    public void putNodes(Map<Integer, String> existingNodes) {
+        nodes.putAll(existingNodes);
     }
 
     public void putNode(int nodeId, String host) {

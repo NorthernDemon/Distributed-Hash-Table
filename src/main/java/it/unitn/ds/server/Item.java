@@ -5,6 +5,13 @@ import com.google.common.base.MoreObjects;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Item stored in the ring based on its key, falls into area of nodes
+ * Version is used in replication, starts from 1 and up
+ * Clients can get/update item given it's key and at least one node
+ * Coordinator does not have to store the item himself
+ * Responsible node has id >= item key
+ */
 public final class Item implements Serializable {
 
     private final int key;

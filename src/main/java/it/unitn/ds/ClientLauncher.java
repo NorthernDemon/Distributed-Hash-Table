@@ -38,12 +38,12 @@ public final class ClientLauncher {
      * @param key    of the item
      */
     public static void get(String host, int nodeId, int key) {
+        NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+        if (node == null) {
+            logger.warn("Cannot get remote nodeId=" + nodeId);
+            return;
+        }
         try {
-            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
-            if (node == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return;
-            }
             Item item = node.getItem(key);
             logger.info("Got item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
@@ -75,7 +75,7 @@ public final class ClientLauncher {
     }
 
     /**
-     * View topology of the circle from the given node id
+     * View ring topology from the given node id
      *
      * @param targetNodeId of the known node
      */

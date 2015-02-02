@@ -32,7 +32,7 @@ public final class ServerLauncher {
     }
 
     /**
-     * New Node will join the circle of trust based on its id and known existing node id
+     * New Node will join the ring based on its id and known existing node id
      * If this is the first node joining, existing id = 0
      *
      * @param nodeId           id of the current node to join
@@ -53,7 +53,7 @@ public final class ServerLauncher {
     }
 
     /**
-     * Current Node will leave the circle of trust
+     * Current Node will leave the ring
      */
     public static void leave() {
         if (!nodeLocal.isConnected()) {
