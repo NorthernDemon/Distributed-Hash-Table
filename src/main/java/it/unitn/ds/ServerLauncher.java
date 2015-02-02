@@ -2,6 +2,7 @@ package it.unitn.ds;
 
 import it.unitn.ds.server.NodeLocal;
 import it.unitn.ds.util.InputUtil;
+import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,6 +27,7 @@ public final class ServerLauncher {
         logger.info("Example: join,localhost,10,none,0");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: leave");
+        StorageUtil.init();
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 

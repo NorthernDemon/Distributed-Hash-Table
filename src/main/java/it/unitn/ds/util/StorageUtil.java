@@ -82,6 +82,20 @@ public abstract class StorageUtil {
         }
     }
 
+    /**
+     * Creates storage folder
+     */
+    public static void init() {
+        try {
+            Path path = Paths.get("storage/");
+            if (!Files.exists(path)) {
+                Files.createDirectory(path);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to create storage directory", e);
+        }
+    }
+
     private static String getFileName(int nodeId) {
         return "storage/Node-" + nodeId + ".csv";
     }
