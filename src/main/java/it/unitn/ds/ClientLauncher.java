@@ -68,8 +68,18 @@ public final class ClientLauncher {
      */
     public static void view(String host, int targetNodeId) {
         try {
-            for (int nodeId : RemoteUtil.getRemoteNode(host, targetNodeId).getNodes().keySet()) {
-                logger.debug("Node=" + RemoteUtil.getRemoteNode(host, nodeId).getNode());
+            NodeRemote remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId);
+            if (remoteNode == null) {
+                logger.warn("Cannot get remote nodeId=" + targetNodeId);
+                return;
+            }
+            for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
+                NodeRemote node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey());
+                if (node == null) {
+                    logger.warn("Cannot get remote nodeId=" + entry.getKey());
+                } else {
+                    logger.debug("Node=" + node.getNode());
+                }
             }
             logger.info("Viewed topology from targetNodeId=" + targetNodeId);
         } catch (Exception e) {
