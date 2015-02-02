@@ -1,10 +1,13 @@
 package it.unitn.ds;
 
 import it.unitn.ds.server.Item;
+import it.unitn.ds.server.NodeRemote;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Map;
 
 public final class ClientLauncher {
 
@@ -36,7 +39,12 @@ public final class ClientLauncher {
      */
     public static void get(String host, int nodeId, int key) {
         try {
-            Item item = RemoteUtil.getRemoteNode(host, nodeId).getItem(key);
+            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+            if (node == null) {
+                logger.warn("Cannot get remote nodeId=" + nodeId);
+                return;
+            }
+            Item item = node.getItem(key);
             logger.info("Got item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
             logger.error("RMI failed miserably", e);
@@ -53,7 +61,12 @@ public final class ClientLauncher {
      */
     public static void update(String host, int nodeId, int key, String value) {
         try {
-            Item item = RemoteUtil.getRemoteNode(host, nodeId).updateItem(key, value);
+            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+            if (node == null) {
+                logger.warn("Cannot get remote nodeId=" + nodeId);
+                return;
+            }
+            Item item = node.updateItem(key, value);
             logger.info("Updated item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
             logger.error("RMI failed miserably", e);

@@ -4,6 +4,7 @@ import it.unitn.ds.util.RemoteUtil;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -67,6 +68,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
 
+    @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
         logger.debug("Get item request with key=" + key);
@@ -77,10 +79,17 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).getItem(key);
+            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+            if (remoteNode == null) {
+                logger.warn("Cannot get remote nodeId=" + nodeId);
+                return null;
+            } else {
+                return remoteNode.getItem(key);
+            }
         }
     }
 
+    @Nullable
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
         logger.debug("Update item request with key=" + key);
@@ -93,7 +102,13 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).updateItem(key, value);
+            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+            if (remoteNode == null) {
+                logger.warn("Cannot get remote nodeId=" + nodeId);
+                return null;
+            } else {
+                return remoteNode.updateItem(key, value);
+            }
         }
     }
 }

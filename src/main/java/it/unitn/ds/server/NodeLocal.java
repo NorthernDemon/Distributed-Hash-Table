@@ -44,13 +44,20 @@ public final class NodeLocal {
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            Map<Integer, String> nodes = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId).getNodes();
+            NodeRemote remoteNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId);
+            if (remoteNode == null) {
+                logger.warn("Cannot get remote nodeId=" + existingNodeId);
+                return;
+            }
+            Map<Integer, String> nodes = remoteNode.getNodes();
             Node successorNode = getSuccessorNode(nodeId, nodes);
             node = register(host, nodeId, port);
             node.getNodes().putAll(nodes);
             node.getNodes().put(node.getId(), node.getHost());
             announceJoin();
-            transferItems(successorNode);
+            if (successorNode != null) {
+                transferItems(successorNode);
+            }
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
     }
@@ -119,7 +126,13 @@ public final class NodeLocal {
             return null;
         }
         logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
-        return RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId).getNode();
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId);
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote nodeId=" + successorNodeId);
+            return null;
+        } else {
+            return remoteNode.getNode();
+        }
     }
 
     private int getSuccessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
@@ -141,7 +154,12 @@ public final class NodeLocal {
             logger.debug("Nothing to copy from node=" + node + " successorNode=" + successorNode);
             return;
         }
-        RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId()).updateItems(new ArrayList<>(node.getItems().values()));
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId());
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote nodeId=" + successorNode.getId());
+            return;
+        }
+        remoteNode.updateItems(new ArrayList<>(node.getItems().values()));
         logger.debug("Copied items node=" + node + " successorNode=" + successorNode);
     }
 
@@ -156,8 +174,18 @@ public final class NodeLocal {
             return;
         }
         List<Item> items = getTransferItems(successorNode);
-        RemoteUtil.getRemoteNode(node.getHost(), node.getId()).updateItems(items);
-        RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId()).removeItems(items);
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getHost(), node.getId());
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote nodeId=" + node.getId());
+            return;
+        }
+        remoteNode.updateItems(items);
+        NodeRemote remoteSuccessor = RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId());
+        if (remoteSuccessor == null) {
+            logger.warn("Cannot get remote nodeId=" + successorNode.getId());
+            return;
+        }
+        remoteSuccessor.removeItems(items);
         logger.debug("Transferred items successorNode=" + successorNode + " node=" + node + " items=" + Arrays.toString(items.toArray()));
     }
 
@@ -195,7 +223,12 @@ public final class NodeLocal {
     private void announceJoin() throws RemoteException {
         logger.debug("NodeId=" + node.getId() + " announcing join to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         for (int nodeId : node.getNodes().keySet()) {
-            RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).addNode(node.getId(), node.getHost());
+            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+            if (remoteNode == null) {
+                logger.warn("Cannot get remote nodeId=" + nodeId);
+                continue;
+            }
+            remoteNode.addNode(node.getId(), node.getHost());
             logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
         }
     }
@@ -207,7 +240,12 @@ public final class NodeLocal {
         logger.debug("NodeId=" + node.getId() + " announcing leave to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         for (int nodeId : node.getNodes().keySet()) {
             if (nodeId != node.getId()) {
-                RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId).removeNode(node.getId());
+                NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+                if (remoteNode == null) {
+                    logger.warn("Cannot get remote nodeId=" + nodeId);
+                    continue;
+                }
+                remoteNode.removeNode(node.getId());
                 logger.debug("NodeId=" + node.getId() + " announced leave to nodeId=" + nodeId);
             }
         }

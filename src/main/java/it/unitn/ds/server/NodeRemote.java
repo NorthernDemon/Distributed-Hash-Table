@@ -1,5 +1,7 @@
 package it.unitn.ds.server;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -19,7 +21,9 @@ public interface NodeRemote extends Remote {
 
     void removeItems(List<Item> items) throws RemoteException;
 
+    @Nullable
     Item getItem(int key) throws RemoteException;
 
+    @Nullable
     Item updateItem(int key, String value) throws RemoteException;
 }
