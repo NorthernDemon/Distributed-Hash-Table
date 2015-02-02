@@ -2,8 +2,8 @@ package it.unitn.ds.util;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
-import it.unitn.ds.server.Item;
-import it.unitn.ds.server.Node;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +29,7 @@ public abstract class StorageUtil {
      *
      * @param node responsible for item
      */
-    public static Collection<Item> write(Node node) {
+    public static void write(Node node) {
         Collection<Item> items = node.getItems().values();
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
             for (Item item : items) {
@@ -39,7 +39,6 @@ public abstract class StorageUtil {
         } catch (Exception e) {
             logger.error("Failed to write items of the node=" + node, e);
         }
-        return items;
     }
 
     /**

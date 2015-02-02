@@ -1,9 +1,9 @@
 package it.unitn.ds.util;
 
 import it.unitn.ds.Replication;
-import it.unitn.ds.server.Item;
-import it.unitn.ds.server.Node;
-import it.unitn.ds.server.NodeRemote;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
+import it.unitn.ds.rmi.NodeServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -25,14 +25,27 @@ public abstract class RemoteUtil {
     /**
      * Get reference to remote node given node id
      *
-     * @param host   network host
-     * @param nodeId of the wanted node
+     * @param node  current node
+     * @param clazz type of the interface
      * @return reference to remote object
      */
     @Nullable
-    public static NodeRemote getRemoteNode(String host, int nodeId) {
+    private static <T> T getRemoteNode(Node node, Class<T> clazz) {
+        return getRemoteNode(node.getHost(), node.getId(), clazz);
+    }
+
+    /**
+     * Get reference to remote node given node id
+     *
+     * @param host   network host
+     * @param nodeId of the wanted node
+     * @param clazz  type of the interface
+     * @return reference to remote object
+     */
+    @Nullable
+    public static <T> T getRemoteNode(String host, int nodeId, Class<T> clazz) {
         try {
-            return (NodeRemote) Naming.lookup(getRMI(host, nodeId));
+            return clazz.cast(Naming.lookup(getRMI(host, nodeId)));
         } catch (Exception e) {
             logger.error("Failed to get remote node by nodeId=" + nodeId, e);
         }
@@ -70,7 +83,7 @@ public abstract class RemoteUtil {
             return null;
         }
         logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId);
+        NodeServer remoteNode = RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId, NodeServer.class);
         if (remoteNode == null) {
             logger.warn("Cannot get remote nodeId=" + successorNodeId);
             return null;
@@ -107,12 +120,12 @@ public abstract class RemoteUtil {
         copyItems(fromNode, toNode, new ArrayList<>(fromNode.getItems().values()));
     }
 
-    public static void copyItems(Node fromNode, Node toNode, List<Item> items) throws RemoteException {
+    private static void copyItems(Node fromNode, Node toNode, List<Item> items) throws RemoteException {
         if (fromNode.getItems().isEmpty()) {
             logger.debug("Nothing to copy from fromNode=" + fromNode + " toNode=" + toNode);
             return;
         }
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(toNode.getHost(), toNode.getId());
+        NodeServer remoteNode = RemoteUtil.getRemoteNode(toNode, NodeServer.class);
         if (remoteNode == null) {
             logger.warn("Cannot get remote toNodeId=" + toNode.getId());
             return;
@@ -133,13 +146,13 @@ public abstract class RemoteUtil {
             return;
         }
         List<Item> items = getTransferItems(fromNode, toNode);
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(toNode.getHost(), toNode.getId());
+        NodeServer remoteNode = RemoteUtil.getRemoteNode(toNode, NodeServer.class);
         if (remoteNode == null) {
             logger.warn("Cannot get remote toNodeId=" + toNode.getId());
             return;
         }
         remoteNode.updateItems(items);
-        NodeRemote remoteSuccessor = RemoteUtil.getRemoteNode(fromNode.getHost(), fromNode.getId());
+        NodeServer remoteSuccessor = RemoteUtil.getRemoteNode(fromNode, NodeServer.class);
         if (remoteSuccessor == null) {
             logger.warn("Cannot get remote nodeId=" + fromNode.getId());
             return;

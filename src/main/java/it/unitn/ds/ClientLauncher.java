@@ -1,12 +1,14 @@
 package it.unitn.ds;
 
-import it.unitn.ds.server.Item;
-import it.unitn.ds.server.NodeRemote;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.rmi.NodeLocal;
+import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.rmi.RemoteException;
 import java.util.Map;
 
 public final class ClientLauncher {
@@ -19,8 +21,6 @@ public final class ClientLauncher {
      * Example: update,localhost,10,12,New Value Item
      * Example: get,localhost,10,12
      * Example: view,localhost,10
-     *
-     * @param args
      */
     public static void main(String args[]) {
         logger.info("Client is ready for request>>");
@@ -37,19 +37,14 @@ public final class ClientLauncher {
      * @param nodeId of the known node, does not have to contain item key
      * @param key    of the item
      */
-    public static void get(String host, int nodeId, int key) {
-        NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+    public static void get(String host, int nodeId, int key) throws RemoteException {
+        NodeLocal node = RemoteUtil.getRemoteNode(host, nodeId, NodeLocal.class);
         if (node == null) {
             logger.warn("Cannot get remote nodeId=" + nodeId);
             return;
         }
-        try {
-            Item item = node.getItem(key);
-            logger.info("Got item=" + item + " from nodeId=" + nodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
-        }
+        Item item = node.getItem(key);
+        logger.info("Got item=" + item + " from nodeId=" + nodeId);
     }
 
     /**
@@ -59,19 +54,14 @@ public final class ClientLauncher {
      * @param key    of the item
      * @param value  new item value
      */
-    public static void update(String host, int nodeId, int key, String value) {
-        NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+    public static void update(String host, int nodeId, int key, String value) throws RemoteException {
+        NodeLocal node = RemoteUtil.getRemoteNode(host, nodeId, NodeLocal.class);
         if (node == null) {
             logger.warn("Cannot get remote nodeId=" + nodeId);
             return;
         }
-        try {
-            Item item = node.updateItem(key, value);
-            logger.info("Updated item=" + item + " from nodeId=" + nodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
-        }
+        Item item = node.updateItem(key, value);
+        logger.info("Updated item=" + item + " from nodeId=" + nodeId);
     }
 
     /**
@@ -79,25 +69,20 @@ public final class ClientLauncher {
      *
      * @param targetNodeId of the known node
      */
-    public static void view(String host, int targetNodeId) {
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId);
+    public static void view(String host, int targetNodeId) throws RemoteException {
+        NodeServer remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId, NodeServer.class);
         if (remoteNode == null) {
             logger.warn("Cannot get remote nodeId=" + targetNodeId);
             return;
         }
-        try {
-            for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
-                NodeRemote node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey());
-                if (node == null) {
-                    logger.warn("Cannot get remote nodeId=" + entry.getKey());
-                } else {
-                    logger.debug("Node=" + node.getNode());
-                }
+        for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
+            NodeServer node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
+            if (node == null) {
+                logger.warn("Cannot get remote nodeId=" + entry.getKey());
+            } else {
+                logger.debug("Node=" + node.getNode());
             }
-            logger.info("Viewed topology from targetNodeId=" + targetNodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
         }
+        logger.info("Viewed topology from targetNodeId=" + targetNodeId);
     }
 }

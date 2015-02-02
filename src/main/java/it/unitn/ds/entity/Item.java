@@ -1,4 +1,4 @@
-package it.unitn.ds.server;
+package it.unitn.ds.entity;
 
 import com.google.common.base.MoreObjects;
 

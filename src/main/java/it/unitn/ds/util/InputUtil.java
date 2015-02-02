@@ -46,7 +46,6 @@ public abstract class InputUtil {
             }
         } catch (Exception e) {
             logger.error("Input scanner error", e);
-            System.exit(1);
         }
     }
 

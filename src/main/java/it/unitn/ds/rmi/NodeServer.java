@@ -1,13 +1,17 @@
-package it.unitn.ds.server;
+package it.unitn.ds.rmi;
 
-import org.jetbrains.annotations.Nullable;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Map;
 
-public interface NodeRemote extends Remote {
+/**
+ * Interface to be used by SERVER
+ */
+public interface NodeServer extends Remote {
 
     Node getNode() throws RemoteException;
 
@@ -20,10 +24,4 @@ public interface NodeRemote extends Remote {
     void updateItems(List<Item> items) throws RemoteException;
 
     void removeItems(List<Item> items) throws RemoteException;
-
-    @Nullable
-    Item getItem(int key) throws RemoteException;
-
-    @Nullable
-    Item updateItem(int key, String value) throws RemoteException;
 }

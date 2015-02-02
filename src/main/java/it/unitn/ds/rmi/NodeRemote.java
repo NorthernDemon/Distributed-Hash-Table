@@ -1,6 +1,8 @@
-package it.unitn.ds.server;
+package it.unitn.ds.rmi;
 
 import it.unitn.ds.Replication;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
 import it.unitn.ds.util.RemoteUtil;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
@@ -13,13 +15,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRemote {
+public final class NodeRemote extends UnicastRemoteObject implements NodeServer, NodeLocal {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private Node node;
+    private final Node node;
 
-    public NodeRemoteImpl(Node node) throws RemoteException {
+    public NodeRemote(Node node) throws RemoteException {
         this.node = node;
     }
 
@@ -80,7 +82,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+            NodeLocal remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeLocal.class);
             if (remoteNode == null) {
                 logger.warn("Cannot get remote nodeId=" + nodeId);
                 return null;
@@ -114,7 +116,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+            NodeLocal remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeLocal.class);
             if (remoteNode == null) {
                 logger.warn("Cannot get remote nodeId=" + nodeId);
                 return null;
