@@ -73,7 +73,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
         int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
         if (nodeId == node.getId()) {
             Item item = node.getItems().get(key);
-            logger.debug("Found item=" + item);
+            logger.debug("Got item=" + item);
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
@@ -89,7 +89,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             Item item = new Item(key, value, 0);
             node.getItems().put(item.getKey(), item);
             StorageUtil.write(node);
-            logger.debug("Found item=" + item);
+            logger.debug("Updated item=" + item);
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);

@@ -14,8 +14,14 @@ public final class Node implements Serializable {
 
     private final String host;
 
+    /**
+     * Map<ItemKey, Item>
+     */
     private final Map<Integer, Item> items = new TreeMap<>();
 
+    /**
+     * Map<NodeId, Host>
+     */
     private final Map<Integer, String> nodes = new TreeMap<>();
 
     public Node(int id, String host) {
