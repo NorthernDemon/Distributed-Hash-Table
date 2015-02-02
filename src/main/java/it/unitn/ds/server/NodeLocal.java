@@ -39,7 +39,7 @@ public final class NodeLocal {
             logger.info("NodeId=" + nodeId + " is the first node in circle");
             LocateRegistry.createRegistry(1099);
             node = register(host, nodeId);
-            node.getNodes().put(node.getId(), node.getHost());
+            node.addNodes();
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
@@ -51,8 +51,7 @@ public final class NodeLocal {
             Map<Integer, String> nodes = remoteNode.getNodes();
             Node successorNode = RemoteUtil.getSuccessorNode(nodeId, nodes);
             node = register(host, nodeId);
-            node.getNodes().putAll(nodes);
-            node.getNodes().put(node.getId(), node.getHost());
+            node.addNodes(nodes);
             announceJoin();
             if (successorNode != null) {
                 RemoteUtil.transferItems(successorNode, node);

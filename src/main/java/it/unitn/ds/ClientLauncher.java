@@ -16,8 +16,8 @@ public final class ClientLauncher {
     /**
      * ./client.jar {methodName},{host},{Node ID},{key},{value}
      * <p/>
+     * Example: update,localhost,10,12,New Value Item
      * Example: get,localhost,10,12
-     * Example: update,localhost,15,12,New Value Item
      * Example: view,localhost,10
      *
      * @param args
@@ -25,8 +25,8 @@ public final class ClientLauncher {
     public static void main(String args[]) {
         logger.info("Client is ready for request>>");
         logger.info("Example: {methodName},{host},{Node ID},{key},{value}");
+        logger.info("Example: update,localhost,10,12,New Value Item");
         logger.info("Example: get,localhost,10,12");
-        logger.info("Example: update,localhost,15,12,New Value Item");
         logger.info("Example: view,localhost,10");
         InputUtil.readInput(ClientLauncher.class.getName());
     }
@@ -60,12 +60,12 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(String host, int nodeId, int key, String value) {
+        NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
+        if (node == null) {
+            logger.warn("Cannot get remote nodeId=" + nodeId);
+            return;
+        }
         try {
-            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
-            if (node == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return;
-            }
             Item item = node.updateItem(key, value);
             logger.info("Updated item=" + item + " from nodeId=" + nodeId);
         } catch (Exception e) {
@@ -80,12 +80,12 @@ public final class ClientLauncher {
      * @param targetNodeId of the known node
      */
     public static void view(String host, int targetNodeId) {
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId);
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote nodeId=" + targetNodeId);
+            return;
+        }
         try {
-            NodeRemote remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + targetNodeId);
-                return;
-            }
             for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
                 NodeRemote node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey());
                 if (node == null) {

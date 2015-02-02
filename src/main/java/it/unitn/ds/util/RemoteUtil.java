@@ -95,10 +95,10 @@ public abstract class RemoteUtil {
      * @param toNode   to which to transfer
      */
     public static void copyItems(Node fromNode, Node toNode) throws RemoteException {
-        copyItems(fromNode, new ArrayList<>(fromNode.getItems().values()), toNode);
+        copyItems(fromNode, toNode, new ArrayList<>(fromNode.getItems().values()));
     }
 
-    public static void copyItems(Node fromNode, List<Item> items, Node toNode) throws RemoteException {
+    public static void copyItems(Node fromNode, Node toNode, List<Item> items) throws RemoteException {
         if (fromNode.getItems().isEmpty()) {
             logger.debug("Nothing to copy from fromNode=" + fromNode + " toNode=" + toNode);
             return;
@@ -170,32 +170,33 @@ public abstract class RemoteUtil {
     }
 
     public static void updateReplicas(Node node, final Item item) throws RemoteException {
-        logger.debug("Updating replicas N=" + Replication.N + " for node=" + node);
+        logger.debug("Updating replicas N=" + Replication.N + " from node=" + node);
         int nodeId = node.getId();
-        for (int i = 0; i < Replication.N - 1; i++) {
+        for (int i = 1; i < Replication.N; i++) {
             Node successorNode = getSuccessorNode(nodeId, node.getNodes());
             if (successorNode == null || successorNode.getId() == node.getId()) {
                 break;
             }
-            logger.debug("Replicating i=" + i + " to node=" + successorNode);
-            copyItems(node, new ArrayList<Item>() {{
+            copyItems(node, successorNode, new ArrayList<Item>() {{
                 add(item);
-            }}, successorNode);
+            }});
+            logger.debug("Replicated i=" + i + " to node=" + successorNode);
             nodeId = successorNode.getId();
         }
     }
 
     public static List<Item> getReplicas(Node node, int itemKey) throws RemoteException {
-        logger.debug("Getting replication N=" + Replication.N + " for node=" + node);
+        logger.debug("Getting replication N=" + Replication.N + " from node=" + node);
         List<Item> items = new ArrayList<>(Replication.N - 1);
         int nodeId = node.getId();
-        for (int i = 0; i < Replication.N - 1; i++) {
+        for (int i = 1; i < Replication.N; i++) {
             Node successorNode = getSuccessorNode(nodeId, node.getNodes());
-            if (i == Replication.R - 1 || successorNode == null || successorNode.getId() == node.getId()) {
+            if (i == Replication.R || successorNode == null || successorNode.getId() == node.getId()) {
                 break;
             }
-            logger.debug("Getting replicas i=" + i + " to node=" + successorNode);
-            items.add(successorNode.getItems().get(itemKey));
+            Item item = successorNode.getItems().get(itemKey);
+            logger.debug("Got replicas i=" + i + " item=" + item + " from node=" + successorNode);
+            items.add(item);
             nodeId = successorNode.getId();
         }
         return items;

@@ -37,7 +37,7 @@ public abstract class InputUtil {
                         params[i - 1] = commands[i];
                         methodParameterTypes.add(String.class);
                     }
-                    logger.debug("Parameter type: " + params[i - 1].getClass().getName());
+                    logger.trace("Parameter type: " + params[i - 1].getClass().getName());
                 }
                 logger.debug("Calling method with parameters: " + commands[0] + " | " + Arrays.toString(params));
                 Class<?> aClass = Class.forName(className);
