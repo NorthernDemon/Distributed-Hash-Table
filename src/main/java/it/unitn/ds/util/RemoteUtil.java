@@ -95,6 +95,10 @@ public abstract class RemoteUtil {
      * @param toNode   to which to transfer
      */
     public static void copyItems(Node fromNode, Node toNode) throws RemoteException {
+        copyItems(fromNode, new ArrayList<>(fromNode.getItems().values()), toNode);
+    }
+
+    public static void copyItems(Node fromNode, List<Item> items, Node toNode) throws RemoteException {
         if (fromNode.getItems().isEmpty()) {
             logger.debug("Nothing to copy from fromNode=" + fromNode + " toNode=" + toNode);
             return;
@@ -104,7 +108,7 @@ public abstract class RemoteUtil {
             logger.warn("Cannot get remote toNodeId=" + toNode.getId());
             return;
         }
-        remoteNode.updateItems(new ArrayList<>(fromNode.getItems().values()));
+        remoteNode.updateItems(items);
         logger.debug("Copied items fromNode=" + fromNode + " toNode=" + toNode);
     }
 
@@ -170,11 +174,27 @@ public abstract class RemoteUtil {
         int nodeId = node.getId();
         for (int i = 0; i < Replication.N - 1; i++) {
             Node successorNode = getSuccessorNode(nodeId, node.getNodes());
-            logger.debug("Replicating to node=" + successorNode);
-            copyItems(node, successorNode);
             if (successorNode == null || successorNode.getId() == node.getId()) {
                 break;
             }
+            logger.debug("Replicating i=" + i + " to node=" + successorNode);
+            copyItems(node, successorNode);
+            nodeId = successorNode.getId();
+        }
+    }
+
+    public static void replicate(Node node, final Item item) throws RemoteException {
+        logger.debug("Replicating N=" + Replication.N + " for node=" + node);
+        int nodeId = node.getId();
+        for (int i = 0; i < Replication.N - 1; i++) {
+            Node successorNode = getSuccessorNode(nodeId, node.getNodes());
+            if (successorNode == null || successorNode.getId() == node.getId()) {
+                break;
+            }
+            logger.debug("Replicating i=" + i + " to node=" + successorNode);
+            copyItems(node, new ArrayList<Item>() {{
+                add(item);
+            }}, successorNode);
             nodeId = successorNode.getId();
         }
     }
