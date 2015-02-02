@@ -35,7 +35,8 @@ public final class NodeLocal {
     public void join(String host, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
         if (existingNodeId == 0) {
             logger.info("NodeId=" + nodeId + " is the first node in circle");
-            node = register(host, nodeId, 1099);
+            LocateRegistry.createRegistry(1099);
+            node = register(host, nodeId);
             node.getNodes().put(node.getId(), node.getHost());
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
@@ -47,7 +48,7 @@ public final class NodeLocal {
             }
             Map<Integer, String> nodes = remoteNode.getNodes();
             Node successorNode = getSuccessorNode(nodeId, nodes);
-            node = register(host, nodeId, new Random().nextInt(10000) + 1100);
+            node = register(host, nodeId);
             node.getNodes().putAll(nodes);
             node.getNodes().put(node.getId(), node.getHost());
             announceJoin();
@@ -73,7 +74,7 @@ public final class NodeLocal {
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
         UnicastRemoteObject.unexportObject(registry, true);
         StorageUtil.removeFile(node.getId());
-        logger.info("NodeId=" + node.getId() + " disconnected.");
+        logger.info("NodeId=" + node.getId() + " disconnected");
         node = null;
         registry = null;
     }
@@ -82,10 +83,10 @@ public final class NodeLocal {
      * Registers RMI for new node, initializes node object
      *
      * @param nodeId id of the current node to instantiate
-     * @param port   RMI port
      * @throws Exception of shutdown hook
      */
-    private Node register(String host, final int nodeId, int port) throws Exception {
+    private Node register(String host, final int nodeId) throws Exception {
+        int port = new Random().nextInt(10000) + 1100;
         logger.debug("RMI registering with port=" + port);
         System.setProperty("java.rmi.server.hostname", host);
         registry = LocateRegistry.createRegistry(port);
