@@ -1,11 +1,18 @@
 package it.unitn.ds.util;
 
+import it.unitn.ds.Replication;
+import it.unitn.ds.server.Item;
+import it.unitn.ds.server.Node;
 import it.unitn.ds.server.NodeRemote;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,6 +53,130 @@ public abstract class RemoteUtil {
             }
         }
         return nodes.keySet().iterator().next();
+    }
+
+    /**
+     * Returns successor node clockwise in circle of the given node id in the set of nodes
+     *
+     * @param nodeId predecessor node id
+     * @param nodes  set of possible successors
+     * @return successor node of the given node id
+     */
+    @Nullable
+    public static Node getSuccessorNode(int nodeId, Map<Integer, String> nodes) throws RemoteException {
+        int successorNodeId = getSuccessorNodeId(nodeId, nodes);
+        if (successorNodeId == nodeId) {
+            logger.debug("NodeId=" + nodeId + " did not find successorNode, except itself");
+            return null;
+        }
+        logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId);
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote nodeId=" + successorNodeId);
+            return null;
+        } else {
+            return remoteNode.getNode();
+        }
+    }
+
+    private static int getSuccessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
+        for (int nodeId : nodes.keySet()) {
+            if (nodeId > targetNodeId) {
+                return nodeId;
+            }
+        }
+        return nodes.keySet().iterator().next();
+    }
+
+    /**
+     * Copies items from current node to successor node
+     *
+     * @param fromNode from which to transfer
+     * @param toNode   to which to transfer
+     */
+    public static void copyItems(Node fromNode, Node toNode) throws RemoteException {
+        if (fromNode.getItems().isEmpty()) {
+            logger.debug("Nothing to copy from fromNode=" + fromNode + " toNode=" + toNode);
+            return;
+        }
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(toNode.getHost(), toNode.getId());
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote toNodeId=" + toNode.getId());
+            return;
+        }
+        remoteNode.updateItems(new ArrayList<>(fromNode.getItems().values()));
+        logger.debug("Copied items fromNode=" + fromNode + " toNode=" + toNode);
+    }
+
+    /**
+     * Transfers items from successor node to current node, removes items of fromNode
+     *
+     * @param fromNode from which to transfer
+     * @param toNode   from which to transfer
+     */
+    public static void transferItems(Node fromNode, Node toNode) throws RemoteException {
+        if (fromNode.getItems().isEmpty()) {
+            logger.debug("Nothing to transfer from fromNode=" + fromNode + " toNode=" + toNode);
+            return;
+        }
+        List<Item> items = getTransferItems(fromNode, toNode);
+        NodeRemote remoteNode = RemoteUtil.getRemoteNode(toNode.getHost(), toNode.getId());
+        if (remoteNode == null) {
+            logger.warn("Cannot get remote toNodeId=" + toNode.getId());
+            return;
+        }
+        remoteNode.updateItems(items);
+        NodeRemote remoteSuccessor = RemoteUtil.getRemoteNode(fromNode.getHost(), fromNode.getId());
+        if (remoteSuccessor == null) {
+            logger.warn("Cannot get remote nodeId=" + fromNode.getId());
+            return;
+        }
+        remoteSuccessor.removeItems(items);
+        logger.debug("Transferred items fromNode=" + fromNode + " node=" + toNode + " items=" + Arrays.toString(items.toArray()));
+    }
+
+    /**
+     * Returns a list of items, that should be transferred from successor node to current node
+     * <p/>
+     * If new node appears the last and successor it the first (zero-crossing)
+     * it transfer only items between current node and its predecessor
+     *
+     * @param fromNode from which to transfer
+     * @param toNode   from which to transfer
+     * @return list of items for current node
+     */
+    private static List<Item> getTransferItems(Node fromNode, Node toNode) {
+        boolean isZeroCrossed = fromNode.getId() < toNode.getId();
+        List<Item> items = new ArrayList<>();
+        for (Item item : fromNode.getItems().values()) {
+            if (item.getKey() <= toNode.getId()) {
+                // check if item (e.g. 5) falls in range of highest-identified node (e.g.20) or lowest (e.g. 5)
+                if (isZeroCrossed) {
+                    if (item.getKey() > fromNode.getId()) {
+                        items.add(item);
+                    }
+                } else {
+                    items.add(item);
+                }
+            } else {
+                return items;
+            }
+        }
+        return items;
+    }
+
+    public static void replicate(Node node) throws RemoteException {
+        logger.debug("Replicating N=" + Replication.N + " for node=" + node);
+        int nodeId = node.getId();
+        for (int i = 0; i < Replication.N - 1; i++) {
+            Node successorNode = getSuccessorNode(nodeId, node.getNodes());
+            logger.debug("Replicating to node=" + successorNode);
+            copyItems(node, successorNode);
+            if (successorNode == null || successorNode.getId() == node.getId()) {
+                break;
+            }
+            nodeId = successorNode.getId();
+        }
     }
 
     /**

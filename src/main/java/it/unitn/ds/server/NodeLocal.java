@@ -11,7 +11,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Random;
 
 public final class NodeLocal {
 
@@ -47,13 +49,13 @@ public final class NodeLocal {
                 return;
             }
             Map<Integer, String> nodes = remoteNode.getNodes();
-            Node successorNode = getSuccessorNode(nodeId, nodes);
+            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, nodes);
             node = register(host, nodeId);
             node.getNodes().putAll(nodes);
             node.getNodes().put(node.getId(), node.getHost());
             announceJoin();
             if (successorNode != null) {
-                transferItems(successorNode);
+                RemoteUtil.transferItems(successorNode, node);
             }
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
@@ -66,9 +68,9 @@ public final class NodeLocal {
      */
     public void leave() throws Exception {
         logger.info("NodeId=" + node.getId() + " is disconnecting from the circle...");
-        Node successorNode = getSuccessorNode(node.getId(), node.getNodes());
+        Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
         if (successorNode != null) {
-            copyItems(successorNode);
+            RemoteUtil.copyItems(node, successorNode);
             announceLeave();
         }
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
@@ -109,125 +111,20 @@ public final class NodeLocal {
     }
 
     /**
-     * Returns successor node clockwise in circle of the given node id in the set of nodes
-     *
-     * @param nodeId predecessor node id
-     * @param nodes  set of possible successors
-     * @return successor node of the given node id
-     */
-    @Nullable
-    private Node getSuccessorNode(int nodeId, Map<Integer, String> nodes) throws RemoteException {
-        int successorNodeId = getSuccessorNodeId(nodeId, nodes);
-        if (successorNodeId == nodeId) {
-            logger.debug("NodeId=" + nodeId + " did not find successorNode, except itself");
-            return null;
-        }
-        logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(nodes.get(successorNodeId), successorNodeId);
-        if (remoteNode == null) {
-            logger.warn("Cannot get remote nodeId=" + successorNodeId);
-            return null;
-        } else {
-            return remoteNode.getNode();
-        }
-    }
-
-    private int getSuccessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
-        for (int nodeId : nodes.keySet()) {
-            if (nodeId > targetNodeId) {
-                return nodeId;
-            }
-        }
-        return nodes.keySet().iterator().next();
-    }
-
-    /**
-     * Copies items from current node to successor node
-     *
-     * @param successorNode to which to transfer
-     */
-    private void copyItems(Node successorNode) throws RemoteException {
-        if (node.getItems().isEmpty()) {
-            logger.debug("Nothing to copy from node=" + node + " successorNode=" + successorNode);
-            return;
-        }
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId());
-        if (remoteNode == null) {
-            logger.warn("Cannot get remote nodeId=" + successorNode.getId());
-            return;
-        }
-        remoteNode.updateItems(new ArrayList<>(node.getItems().values()));
-        logger.debug("Copied items node=" + node + " successorNode=" + successorNode);
-    }
-
-    /**
-     * Transfers items from successor node to current node, removes items of successorNode
-     *
-     * @param successorNode from which to transfer
-     */
-    private void transferItems(Node successorNode) throws RemoteException {
-        if (successorNode.getItems().isEmpty()) {
-            logger.debug("Nothing to transfer from successorNode=" + successorNode + " node=" + node);
-            return;
-        }
-        List<Item> items = getTransferItems(successorNode);
-        NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getHost(), node.getId());
-        if (remoteNode == null) {
-            logger.warn("Cannot get remote nodeId=" + node.getId());
-            return;
-        }
-        remoteNode.updateItems(items);
-        NodeRemote remoteSuccessor = RemoteUtil.getRemoteNode(successorNode.getHost(), successorNode.getId());
-        if (remoteSuccessor == null) {
-            logger.warn("Cannot get remote nodeId=" + successorNode.getId());
-            return;
-        }
-        remoteSuccessor.removeItems(items);
-        logger.debug("Transferred items successorNode=" + successorNode + " node=" + node + " items=" + Arrays.toString(items.toArray()));
-    }
-
-    /**
-     * Returns a list of items, that should be transferred from successor node to current node
-     * <p/>
-     * If new node appears the last and successor it the first (zero-crossing)
-     * it transfer only items between current node and its predecessor
-     *
-     * @param successorNode from which to transfer
-     * @return list of items for current node
-     */
-    private List<Item> getTransferItems(Node successorNode) {
-        boolean isZeroCrossed = successorNode.getId() < node.getId();
-        List<Item> items = new ArrayList<>();
-        for (Item item : successorNode.getItems().values()) {
-            if (item.getKey() <= node.getId()) {
-                // check if item (e.g. 5) falls in range of highest-identified node (e.g.20) or lowest (e.g. 5)
-                if (isZeroCrossed) {
-                    if (item.getKey() > successorNode.getId()) {
-                        items.add(item);
-                    }
-                } else {
-                    items.add(item);
-                }
-            } else {
-                return items;
-            }
-        }
-        return items;
-    }
-
-    /**
      * Announce JOIN operation to the set of nodes
      */
     private void announceJoin() throws RemoteException {
         logger.debug("NodeId=" + node.getId() + " announcing join to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         for (int nodeId : node.getNodes().keySet()) {
-            NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                continue;
+            if (nodeId != node.getId()) {
+                NodeRemote remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId);
+                if (remoteNode == null) {
+                    logger.warn("Cannot get remote nodeId=" + nodeId);
+                    continue;
+                }
+                remoteNode.addNode(node.getId(), node.getHost());
+                logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
             }
-            remoteNode.addNode(node.getId(), node.getHost());
-            logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
         }
     }
 

@@ -99,6 +99,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
             node.getItems().put(item.getKey(), item);
             StorageUtil.write(node);
             logger.debug("Updated item=" + item);
+            RemoteUtil.replicate(node);
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
