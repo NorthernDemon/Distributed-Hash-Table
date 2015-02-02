@@ -1,5 +1,6 @@
 package it.unitn.ds.server;
 
+import it.unitn.ds.Replication;
 import it.unitn.ds.util.RemoteUtil;
 import it.unitn.ds.util.StorageUtil;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +75,7 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
         logger.debug("Get item request with key=" + key);
         int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
         if (nodeId == node.getId()) {
-            Item item = node.getItems().get(key);
+            Item item = getLatestItemReplica(node.getItems().get(key), RemoteUtil.getReplicas(node, key));
             logger.debug("Got item=" + item);
             return item;
         } else {
@@ -95,11 +96,21 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
         logger.debug("Update item request with key=" + key);
         int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
         if (nodeId == node.getId()) {
-            Item item = new Item(key, value, 0);
+            Item item = node.getItems().get(key);
+            int version = 1;
+            if (item != null) {
+                List<Item> replicas = RemoteUtil.getReplicas(node, key);
+                if (replicas.size() != Math.max(Replication.R - 1, Replication.W - 1)) {
+                    logger.debug("Q!=max(R,W)");
+                    return null;
+                }
+                version += getLatestItemReplica(item, replicas).getVersion();
+            }
+            item = new Item(key, value, version);
             node.getItems().put(item.getKey(), item);
             StorageUtil.write(node);
+            RemoteUtil.updateReplicas(node, item);
             logger.debug("Updated item=" + item);
-            RemoteUtil.replicate(node, item);
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
@@ -111,5 +122,14 @@ public final class NodeRemoteImpl extends UnicastRemoteObject implements NodeRem
                 return remoteNode.updateItem(key, value);
             }
         }
+    }
+
+    private Item getLatestItemReplica(Item item, List<Item> replicas) throws RemoteException {
+        for (Item replica : replicas) {
+            if (replica.getVersion() > item.getVersion()) {
+                item = replica;
+            }
+        }
+        return item;
     }
 }

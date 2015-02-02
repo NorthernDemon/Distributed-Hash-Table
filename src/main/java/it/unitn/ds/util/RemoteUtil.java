@@ -169,22 +169,8 @@ public abstract class RemoteUtil {
         return items;
     }
 
-    public static void replicate(Node node) throws RemoteException {
-        logger.debug("Replicating N=" + Replication.N + " for node=" + node);
-        int nodeId = node.getId();
-        for (int i = 0; i < Replication.N - 1; i++) {
-            Node successorNode = getSuccessorNode(nodeId, node.getNodes());
-            if (successorNode == null || successorNode.getId() == node.getId()) {
-                break;
-            }
-            logger.debug("Replicating i=" + i + " to node=" + successorNode);
-            copyItems(node, successorNode);
-            nodeId = successorNode.getId();
-        }
-    }
-
-    public static void replicate(Node node, final Item item) throws RemoteException {
-        logger.debug("Replicating N=" + Replication.N + " for node=" + node);
+    public static void updateReplicas(Node node, final Item item) throws RemoteException {
+        logger.debug("Updating replicas N=" + Replication.N + " for node=" + node);
         int nodeId = node.getId();
         for (int i = 0; i < Replication.N - 1; i++) {
             Node successorNode = getSuccessorNode(nodeId, node.getNodes());
@@ -197,6 +183,22 @@ public abstract class RemoteUtil {
             }}, successorNode);
             nodeId = successorNode.getId();
         }
+    }
+
+    public static List<Item> getReplicas(Node node, int itemKey) throws RemoteException {
+        logger.debug("Getting replication N=" + Replication.N + " for node=" + node);
+        List<Item> items = new ArrayList<>(Replication.N - 1);
+        int nodeId = node.getId();
+        for (int i = 0; i < Replication.N - 1; i++) {
+            Node successorNode = getSuccessorNode(nodeId, node.getNodes());
+            if (i == Replication.R - 1 || successorNode == null || successorNode.getId() == node.getId()) {
+                break;
+            }
+            logger.debug("Getting replicas i=" + i + " to node=" + successorNode);
+            items.add(successorNode.getItems().get(itemKey));
+            nodeId = successorNode.getId();
+        }
+        return items;
     }
 
     /**
