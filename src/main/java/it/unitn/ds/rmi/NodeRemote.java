@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public final class NodeRemote extends UnicastRemoteObject implements NodeServer, NodeLocal {
+public final class NodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -82,7 +82,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            NodeLocal remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeLocal.class);
+            NodeClient remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class);
             if (remoteNode == null) {
                 logger.warn("Cannot get remote nodeId=" + nodeId);
                 return null;
@@ -116,7 +116,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            NodeLocal remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeLocal.class);
+            NodeClient remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class);
             if (remoteNode == null) {
                 logger.warn("Cannot get remote nodeId=" + nodeId);
                 return null;

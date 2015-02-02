@@ -1,7 +1,7 @@
 package it.unitn.ds;
 
 import it.unitn.ds.entity.Item;
-import it.unitn.ds.rmi.NodeLocal;
+import it.unitn.ds.rmi.NodeClient;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
@@ -38,7 +38,7 @@ public final class ClientLauncher {
      * @param key    of the item
      */
     public static void get(String host, int nodeId, int key) throws RemoteException {
-        NodeLocal node = RemoteUtil.getRemoteNode(host, nodeId, NodeLocal.class);
+        NodeClient node = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class);
         if (node == null) {
             logger.warn("Cannot get remote nodeId=" + nodeId);
             return;
@@ -55,7 +55,7 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(String host, int nodeId, int key, String value) throws RemoteException {
-        NodeLocal node = RemoteUtil.getRemoteNode(host, nodeId, NodeLocal.class);
+        NodeClient node = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class);
         if (node == null) {
             logger.warn("Cannot get remote nodeId=" + nodeId);
             return;

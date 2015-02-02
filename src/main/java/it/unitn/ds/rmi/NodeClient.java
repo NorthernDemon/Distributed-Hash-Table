@@ -9,7 +9,7 @@ import java.rmi.RemoteException;
 /**
  * Interface to be used by CLIENT
  */
-public interface NodeLocal extends Remote {
+public interface NodeClient extends Remote {
 
     @Nullable
     Item getItem(int key) throws RemoteException;
