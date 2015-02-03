@@ -38,12 +38,7 @@ public final class ClientLauncher {
      * @param key    of the item
      */
     public static void get(String host, int nodeId, int key) throws RemoteException {
-        NodeClient node = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class);
-        if (node == null) {
-            logger.warn("Cannot get remote nodeId=" + nodeId);
-            return;
-        }
-        Item item = node.getItem(key);
+        Item item = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class).getItem(key);
         logger.info("Got item=" + item + " from nodeId=" + nodeId);
     }
 
@@ -55,12 +50,7 @@ public final class ClientLauncher {
      * @param value  new item value
      */
     public static void update(String host, int nodeId, int key, String value) throws RemoteException {
-        NodeClient node = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class);
-        if (node == null) {
-            logger.warn("Cannot get remote nodeId=" + nodeId);
-            return;
-        }
-        Item item = node.updateItem(key, value);
+        Item item = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class).updateItem(key, value);
         logger.info("Updated item=" + item + " from nodeId=" + nodeId);
     }
 
@@ -70,18 +60,10 @@ public final class ClientLauncher {
      * @param targetNodeId of the known node
      */
     public static void view(String host, int targetNodeId) throws RemoteException {
-        NodeServer remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId, NodeServer.class);
-        if (remoteNode == null) {
-            logger.warn("Cannot get remote nodeId=" + targetNodeId);
-            return;
-        }
-        for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
-            NodeServer node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
-            if (node == null) {
-                logger.warn("Cannot get remote nodeId=" + entry.getKey());
-            } else {
-                logger.debug("Node=" + node.getNode());
-            }
+        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(host, targetNodeId, NodeServer.class).getNodes();
+        for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
+            NodeServer remoteNode = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
+            logger.debug("Node=" + remoteNode.getNode());
         }
         logger.info("Viewed topology from targetNodeId=" + targetNodeId);
     }

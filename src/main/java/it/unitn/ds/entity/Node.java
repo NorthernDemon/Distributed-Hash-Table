@@ -26,6 +26,11 @@ public final class Node implements Serializable {
      */
     private final Map<Integer, String> nodes = new TreeMap<>();
 
+    public Node() {
+        this.id = 0;
+        this.host = "";
+    }
+
     public Node(int id, String host) {
         this.id = id;
         this.host = host;
@@ -44,12 +49,24 @@ public final class Node implements Serializable {
         nodes.remove(nodeId);
     }
 
+    public void putItems(List<Item> items) {
+        for (Item item : items) {
+            putItem(item);
+        }
+    }
+
     public void putItem(Item item) {
         items.put(item.getKey(), item);
     }
 
-    public void removeItem(int itemKey) {
-        items.remove(itemKey);
+    public void removeItems(List<Item> items) {
+        for (Item item : items) {
+            removeItem(item.getKey());
+        }
+    }
+
+    public void removeItem(int key) {
+        items.remove(key);
     }
 
     public int getId() {

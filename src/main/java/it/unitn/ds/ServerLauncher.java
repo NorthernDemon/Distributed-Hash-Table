@@ -16,7 +16,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
 
 public final class ServerLauncher {
@@ -69,18 +68,11 @@ public final class ServerLauncher {
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
             NodeServer remoteNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + existingNodeId);
-                return;
-            }
-            Map<Integer, String> nodes = remoteNode.getNodes();
-            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, nodes);
+            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, remoteNode.getNodes());
             node = register(host, nodeId);
-            node.putNodes(nodes);
+            node.putNodes(remoteNode.getNodes());
             announceJoin();
-            if (successorNode != null) {
-                RemoteUtil.transferItems(successorNode, node);
-            }
+            RemoteUtil.transferItems(successorNode, node);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
     }
@@ -97,7 +89,7 @@ public final class ServerLauncher {
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
         Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
-        if (successorNode != null) {
+        if (successorNode != node) {
             RemoteUtil.copyItems(node, successorNode);
             announceLeave();
         }
@@ -145,12 +137,7 @@ public final class ServerLauncher {
         logger.debug("NodeId=" + node.getId() + " announcing join to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         for (int nodeId : node.getNodes().keySet()) {
             if (nodeId != node.getId()) {
-                NodeServer remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeServer.class);
-                if (remoteNode == null) {
-                    logger.warn("Cannot get remote nodeId=" + nodeId);
-                    continue;
-                }
-                remoteNode.addNode(node.getId(), node.getHost());
+                RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeServer.class).addNode(node.getId(), node.getHost());
                 logger.debug("NodeId=" + node.getId() + " announced join to nodeId=" + nodeId);
             }
         }
@@ -163,12 +150,7 @@ public final class ServerLauncher {
         logger.debug("NodeId=" + node.getId() + " announcing leave to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         for (int nodeId : node.getNodes().keySet()) {
             if (nodeId != node.getId()) {
-                NodeServer remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeServer.class);
-                if (remoteNode == null) {
-                    logger.warn("Cannot get remote nodeId=" + nodeId);
-                    continue;
-                }
-                remoteNode.removeNode(node.getId());
+                RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeServer.class).removeNode(node.getId());
                 logger.debug("NodeId=" + node.getId() + " announced leave to nodeId=" + nodeId);
             }
         }

@@ -33,40 +33,36 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
 
     @Override
     public Map<Integer, String> getNodes() throws RemoteException {
-        logger.debug("Get hosts=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        logger.debug("Get nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
         return node.getNodes();
     }
 
     @Override
     public void addNode(int nodeId, String host) throws RemoteException {
-        logger.debug("Add node request with node=" + nodeId);
+        logger.debug("Add node=" + nodeId + ", host=" + host);
         node.putNode(nodeId, host);
         logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
     @Override
     public void removeNode(int nodeId) throws RemoteException {
-        logger.debug("Remove node request with node=" + nodeId);
+        logger.debug("Remove node=" + nodeId);
         node.removeNode(nodeId);
         logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
     @Override
     public void updateItems(List<Item> items) throws RemoteException {
-        logger.debug("Update items request with items=" + Arrays.toString(items.toArray()));
-        for (Item item : items) {
-            node.putItem(item);
-        }
+        logger.debug("Update items=" + Arrays.toString(items.toArray()));
+        node.putItems(items);
         StorageUtil.write(node);
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
 
     @Override
     public void removeItems(List<Item> items) throws RemoteException {
-        logger.debug("Remove items request with items=" + Arrays.toString(items.toArray()));
-        for (Item item : items) {
-            node.removeItem(item.getKey());
-        }
+        logger.debug("Remove items=" + Arrays.toString(items.toArray()));
+        node.removeItems(items);
         StorageUtil.write(node);
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
@@ -74,7 +70,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        logger.debug("Get item request with key=" + key);
+        logger.debug("Get item with key=" + key);
         int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
         if (nodeId == node.getId()) {
             Item item = getLatestItemReplica(node.getItems().get(key), RemoteUtil.getReplicas(node, key));
@@ -82,20 +78,14 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             return item;
         } else {
             logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            NodeClient remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return null;
-            } else {
-                return remoteNode.getItem(key);
-            }
+            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class).getItem(key);
         }
     }
 
     @Nullable
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
-        logger.debug("Update item request with key=" + key);
+        logger.debug("Update item with key=" + key);
         int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
         if (nodeId == node.getId()) {
             Item item = node.getItems().get(key);
@@ -116,13 +106,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             return item;
         } else {
             logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            NodeClient remoteNode = RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return null;
-            } else {
-                return remoteNode.updateItem(key, value);
-            }
+            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class).updateItem(key, value);
         }
     }
 

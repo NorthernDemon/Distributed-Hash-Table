@@ -20,10 +20,16 @@ public final class Item implements Serializable {
 
     private final int version;
 
+    public Item() {
+        this.key = 0;
+        this.value = "";
+        this.version = 0;
+    }
+
     public Item(int key, String value, int version) {
+        this.key = key;
         this.value = value;
         this.version = version;
-        this.key = key;
     }
 
     public int getKey() {
