@@ -13,20 +13,16 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
-import java.util.Random;
 
 public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    @Nullable
-    private static Node node;
+    private static final int RMI_PORT = 1099;
 
     @Nullable
-    private static Registry registry;
+    private static Node node;
 
     /**
      * ./server.jar {methodName},{host},{Own Node ID},{Existing Node ID or 0, if this is the first node}
@@ -62,15 +58,15 @@ public final class ServerLauncher {
         }
         if (existingNodeId == 0) {
             logger.info("NodeId=" + nodeId + " is the first node in ring");
-            LocateRegistry.createRegistry(1099);
+            LocateRegistry.createRegistry(RMI_PORT);
             node = register(host, nodeId);
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            NodeServer remoteNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
-            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, remoteNode.getNodes());
+            NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
+            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNode.getNodes());
             node = register(host, nodeId);
-            node.putNodes(remoteNode.getNodes());
+            node.putNodes(existingNode.getNodes());
             announceJoin();
             RemoteUtil.transferItems(successorNode, node);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
@@ -94,11 +90,9 @@ public final class ServerLauncher {
             announceLeave();
         }
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
-        UnicastRemoteObject.unexportObject(registry, true);
         StorageUtil.removeFile(node.getId());
         logger.info("NodeId=" + node.getId() + " disconnected");
         node = null;
-        registry = null;
     }
 
     /**
@@ -108,10 +102,7 @@ public final class ServerLauncher {
      * @throws Exception of shutdown hook
      */
     private static Node register(String host, final int nodeId) throws Exception {
-        int port = new Random().nextInt(10000) + 1100;
-        logger.debug("RMI registering with port=" + port);
         System.setProperty("java.rmi.server.hostname", host);
-        registry = LocateRegistry.createRegistry(port);
         Node node = new Node(nodeId, host);
         Naming.bind(RemoteUtil.getRMI(host, nodeId), new NodeRemote(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -126,7 +117,7 @@ public final class ServerLauncher {
                 }
             }
         });
-        logger.debug("RMI Node registered=" + node);
+        logger.debug("Node registered=" + node);
         return node;
     }
 
