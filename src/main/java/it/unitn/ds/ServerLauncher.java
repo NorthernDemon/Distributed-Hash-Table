@@ -25,15 +25,14 @@ public final class ServerLauncher {
     private static Node node;
 
     /**
-     * ./server.jar {methodName},{host},{Own Node ID},{Existing Node ID or 0, if this is the first node}
-     * <p/>
+     * Description: method name,node host,node id,existing node host, existing node id
      * Example: join,localhost,10,none,0
      * Example: join,localhost,15,localhost,10
      * Example: leave
      */
     public static void main(String[] args) {
-        logger.info("Server Node is ready for request>>");
-        logger.info("Example: {methodName},{host},{Own Node ID},{Existing Node ID or 0, if this is the first node}");
+        logger.info("Server Node is ready for request >>");
+        logger.info("Example: method name,node host,node id,existing node host, existing node id");
         logger.info("Example: join,localhost,10,none,0");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: leave");
@@ -56,9 +55,9 @@ public final class ServerLauncher {
             logger.warn("Cannot join without leaving first!");
             return;
         }
+        startRMIRegistry();
         if (existingNodeId == 0) {
             logger.info("NodeId=" + nodeId + " is the first node in ring");
-            LocateRegistry.createRegistry(RMI_PORT);
             node = register(host, nodeId);
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
@@ -117,7 +116,6 @@ public final class ServerLauncher {
                 }
             }
         });
-        logger.debug("Node registered=" + node);
         return node;
     }
 
@@ -144,6 +142,17 @@ public final class ServerLauncher {
                 RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeServer.class).removeNode(node.getId());
                 logger.debug("NodeId=" + node.getId() + " announced leave to nodeId=" + nodeId);
             }
+        }
+    }
+
+    /**
+     * Starts RMI registry on default port if not started already
+     */
+    private static void startRMIRegistry() {
+        try {
+            LocateRegistry.createRegistry(RMI_PORT);
+        } catch (RemoteException e) {
+            // already started
         }
     }
 
