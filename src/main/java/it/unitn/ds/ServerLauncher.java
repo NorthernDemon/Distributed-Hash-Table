@@ -14,6 +14,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Arrays;
+import java.util.Map;
 
 public final class ServerLauncher {
 
@@ -63,9 +64,14 @@ public final class ServerLauncher {
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
             NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
-            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNode.getNodes());
+            Map<Integer, String> existingNodes = existingNode.getNodes();
+            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNodes);
+            if (existingNodes.containsKey(nodeId)) {
+                logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
+                return;
+            }
             node = register(host, nodeId);
-            node.putNodes(existingNode.getNodes());
+            node.putNodes(existingNodes);
             announceJoin();
             RemoteUtil.transferItems(successorNode, node);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
