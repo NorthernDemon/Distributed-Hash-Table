@@ -52,6 +52,10 @@ public final class ServerLauncher {
      * @throws Exception in case of RMI error
      */
     public static void join(String host, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
+        if (nodeId <= 0) {
+            logger.warn("Node id must be positive integer [ nodeID > 0 ] !");
+            return;
+        }
         if (isConnected()) {
             logger.warn("Cannot join without leaving first!");
             return;
