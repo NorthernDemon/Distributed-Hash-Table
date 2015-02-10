@@ -56,14 +56,14 @@ public final class ClientLauncher {
     /**
      * View ring topology from the given node id
      *
-     * @param targetNodeId of the known node
+     * @param coordinatorNodeId of the known node
      */
-    public static void view(String host, int targetNodeId) throws RemoteException {
-        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(host, targetNodeId, NodeServer.class).getNodes();
+    public static void view(String host, int coordinatorNodeId) throws RemoteException {
+        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(host, coordinatorNodeId, NodeServer.class).getNodes();
         for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
             NodeServer remoteNode = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
             logger.debug("Node=" + remoteNode.getNode());
         }
-        logger.info("Viewed topology from targetNodeId=" + targetNodeId);
+        logger.info("Viewed topology from coordinatorNodeId=" + coordinatorNodeId);
     }
 }

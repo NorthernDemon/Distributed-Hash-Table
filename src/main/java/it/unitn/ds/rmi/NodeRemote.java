@@ -70,52 +70,44 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        logger.debug("Get item with key=" + key);
-        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
-        if (nodeId == node.getId()) {
-            Item item = getLatestItemReplica(node.getItems().get(key), RemoteUtil.getReplicas(node, key));
-            logger.debug("Got item=" + item);
-            return item;
-        } else {
-            logger.debug("Forwarding GET item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class).getItem(key);
-        }
+        Item item = getLatestVersionFromReplicas(RemoteUtil.getReplicas(node.getNodes(), key));
+        logger.debug("Got item=" + item);
+        return item;
     }
 
     @Nullable
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
-        logger.debug("Update item with key=" + key);
-        int nodeId = RemoteUtil.getNodeIdForItemKey(key, node.getNodes());
-        if (nodeId == node.getId()) {
-            Item item = node.getItems().get(key);
-            int version = 1;
-            if (item != null) {
-                List<Item> replicas = RemoteUtil.getReplicas(node, key);
-                if (replicas.size() + 1 != Math.max(Replication.R, Replication.W)) {
-                    logger.debug("No can agree in quorum: Q! = max(R,W)");
-                    return null;
-                }
-                version += getLatestItemReplica(item, replicas).getVersion();
-            }
-            item = new Item(key, value, version);
-            node.putItem(item);
-            StorageUtil.write(node);
-            RemoteUtil.updateReplicas(node, item);
-            logger.debug("Updated item=" + item);
-            return item;
-        } else {
-            logger.debug("Forwarding UPDATE item request to nodeId=" + nodeId);
-            return RemoteUtil.getRemoteNode(node.getNodes().get(nodeId), nodeId, NodeClient.class).updateItem(key, value);
+        List<Item> replicas = RemoteUtil.getReplicas(node.getNodes(), key);
+        if (!replicas.isEmpty() && replicas.size() != Math.max(Replication.R, Replication.W)) {
+            logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
+            return null;
         }
+        Item item = new Item(key, value, getVersion(replicas));
+        RemoteUtil.updateReplicas(node.getNodes(), item);
+        return item;
     }
 
-    private Item getLatestItemReplica(Item item, List<Item> replicas) throws RemoteException {
+    @Nullable
+    private Item getLatestVersionFromReplicas(List<Item> replicas) throws RemoteException {
+        if (replicas.isEmpty()) {
+            return null;
+        }
+        Item item = new Item();
         for (Item replica : replicas) {
             if (replica.getVersion() > item.getVersion()) {
                 item = replica;
             }
         }
         return item;
+    }
+
+    private int getVersion(List<Item> replicas) throws RemoteException {
+        int version = 1;
+        Item replica = getLatestVersionFromReplicas(replicas);
+        if (replica != null) {
+            version += replica.getVersion();
+        }
+        return version;
     }
 }

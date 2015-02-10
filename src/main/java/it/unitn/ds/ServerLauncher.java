@@ -29,13 +29,17 @@ public final class ServerLauncher {
      * Description: method name,node host,node id,existing node host, existing node id
      * Example: join,localhost,10,none,0
      * Example: join,localhost,15,localhost,10
+     * Example: join,localhost,20,localhost,15
+     * Example: join,localhost,25,localhost,10
      * Example: leave
      */
     public static void main(String[] args) {
         logger.info("Server Node is ready for request >>");
         logger.info("Example: method name,node host,node id,existing node host, existing node id");
-        logger.info("Example: join,localhost,10,none,0");
+        logger.info("Example: join,localhost,10,localhost,0");
         logger.info("Example: join,localhost,15,localhost,10");
+        logger.info("Example: join,localhost,20,localhost,15");
+        logger.info("Example: join,localhost,25,localhost,10");
         logger.info("Example: leave");
         StorageUtil.init();
         InputUtil.readInput(ServerLauncher.class.getName());
@@ -69,9 +73,13 @@ public final class ServerLauncher {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
             NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
             Map<Integer, String> existingNodes = existingNode.getNodes();
-            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNodes);
             if (existingNodes.containsKey(nodeId)) {
                 logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
+                return;
+            }
+            Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNodes);
+            if (successorNode == null) {
+                logger.error("Failed to register nodeId=" + nodeId + " as successor is not found");
                 return;
             }
             node = register(host, nodeId);
@@ -93,8 +101,8 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
-        Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
-        if (successorNode != node) {
+        Node successorNode = RemoteUtil.getSuccessorNode(node);
+        if (successorNode != null) {
             RemoteUtil.copyItems(node, successorNode);
             announceLeave();
         }
