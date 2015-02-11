@@ -11,7 +11,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Iterator;
 
 /**
@@ -23,15 +22,16 @@ public abstract class StorageUtil {
 
     private static final String SEPARATOR = ",";
 
+    private static final String STORAGE_FOLDER = "storage";
+
     /**
      * Creates/Updates list of new items into CSV file in format: {key},{value},{version}
      *
      * @param node responsible for item
      */
     public static void write(Node node) {
-        Collection<Item> items = node.getItems().values();
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
-            for (Item item : items) {
+            for (Item item : node.getItems().values()) {
                 writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + "\n");
                 logger.debug("Storage of node=" + node.getId() + " wrote an item=" + item);
             }
@@ -64,6 +64,20 @@ public abstract class StorageUtil {
     }
 
     /**
+     * Creates storage folder
+     */
+    public static void init() {
+        try {
+            Path path = Paths.get(STORAGE_FOLDER);
+            if (!Files.exists(path)) {
+                Files.createDirectory(path);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to create storage directory", e);
+        }
+    }
+
+    /**
      * Removes file storage of the given node
      *
      * @param nodeId id of the node to remove its CSV file
@@ -79,21 +93,7 @@ public abstract class StorageUtil {
         }
     }
 
-    /**
-     * Creates storage folder
-     */
-    public static void init() {
-        try {
-            Path path = Paths.get("storage/");
-            if (!Files.exists(path)) {
-                Files.createDirectory(path);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to create storage directory", e);
-        }
-    }
-
     private static String getFileName(int nodeId) {
-        return "storage/Node-" + nodeId + ".csv";
+        return STORAGE_FOLDER + "/Node-" + nodeId + ".csv";
     }
 }

@@ -74,7 +74,7 @@ public final class ServerLauncher {
             NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
             Map<Integer, String> existingNodes = existingNode.getNodes();
             if (existingNodes.containsKey(nodeId)) {
-                logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
+                logger.error("Cannot join as nodeId=" + nodeId + " already taken!");
                 return;
             }
             Node successorNode = RemoteUtil.getSuccessorNode(nodeId, existingNodes);

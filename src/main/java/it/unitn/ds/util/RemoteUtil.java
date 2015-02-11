@@ -126,14 +126,14 @@ public abstract class RemoteUtil {
      * @param toNode   to which to transfer
      */
     public static void copyItems(Node fromNode, Node toNode) throws RemoteException {
-        if (fromNode.getItems().isEmpty()) {
-            logger.debug("Nothing to copy from fromNode=" + fromNode + " toNode=" + toNode);
-            return;
-        }
         copyItems(toNode, new ArrayList<>(fromNode.getItems().values()));
     }
 
     private static void copyItems(Node node, List<Item> items) throws RemoteException {
+        if (items.isEmpty()) {
+            logger.debug("Nothing to copy to node=" + node);
+            return;
+        }
         getRemoteNode(node, NodeServer.class).updateItems(items);
         logger.debug("Copied items=" + Arrays.toString(items.toArray()) + " node=" + node);
     }
@@ -178,32 +178,32 @@ public abstract class RemoteUtil {
     }
 
     public static List<Item> getReplicas(Map<Integer, String> nodes, int key) throws RemoteException {
-        Node replicaNode = getSuccessorNode(getNodeIdForItemKey(key, nodes) - 1, nodes);
-        logger.debug("Getting replication N=" + Replication.N + " from replicaNode=" + replicaNode);
-        List<Item> items = new ArrayList<>();
+        Node node = getSuccessorNode(getNodeIdForItemKey(key, nodes) - 1, nodes);
+        logger.debug("Getting replication N=" + Replication.N + " from node=" + node);
+        List<Item> items = new ArrayList<>(Replication.N);
         for (int i = 0; i < Replication.N; i++) {
-            if (replicaNode != null && i != Replication.R) {
-                Item item = replicaNode.getItems().get(key);
+            if (node != null && i != Replication.R) {
+                Item item = node.getItems().get(key);
                 if (item != null) {
-                    logger.debug("Got replicas i=" + i + " of item=" + item + " from replicaNode=" + replicaNode);
                     items.add(item);
+                    logger.debug("Got replicas i=" + i + " of item=" + item + " from node=" + node);
+                    node = getSuccessorNode(node);
                 }
-                replicaNode = getSuccessorNode(replicaNode);
             }
         }
         return items;
     }
 
     public static void updateReplicas(Map<Integer, String> nodes, final Item item) throws RemoteException {
-        Node replicaNode = getSuccessorNode(getNodeIdForItemKey(item.getKey(), nodes) - 1, nodes);
-        logger.debug("Updating replicas N=" + Replication.N + " from replicaNode=" + replicaNode);
+        Node node = getSuccessorNode(getNodeIdForItemKey(item.getKey(), nodes) - 1, nodes);
+        logger.debug("Updating replicas N=" + Replication.N + " from node=" + node);
         for (int i = 0; i < Replication.N; i++) {
-            if (replicaNode != null) {
-                copyItems(replicaNode, new ArrayList<Item>() {{
+            if (node != null) {
+                copyItems(node, new ArrayList<Item>() {{
                     add(item);
                 }});
-                logger.debug("Replicated i=" + i + " to replicaNode=" + replicaNode);
-                replicaNode = getSuccessorNode(replicaNode);
+                logger.debug("Replicated i=" + i + " to node=" + node);
+                node = getSuccessorNode(node);
             }
         }
     }

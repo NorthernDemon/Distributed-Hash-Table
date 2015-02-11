@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -70,7 +71,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        Item item = getLatestVersionFromReplicas(RemoteUtil.getReplicas(node.getNodes(), key));
+        Item item = getLatestVersionItem(RemoteUtil.getReplicas(node.getNodes(), key));
         logger.debug("Got item=" + item);
         return item;
     }
@@ -83,18 +84,20 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
-        Item item = new Item(key, value, getVersion(replicas));
+        Item item = new Item(key, value, incrementLatestVersion(replicas));
         RemoteUtil.updateReplicas(node.getNodes(), item);
         return item;
     }
 
     @Nullable
-    private Item getLatestVersionFromReplicas(List<Item> replicas) throws RemoteException {
+    private Item getLatestVersionItem(List<Item> replicas) throws RemoteException {
         if (replicas.isEmpty()) {
             return null;
         }
-        Item item = new Item();
-        for (Item replica : replicas) {
+        Iterator<Item> iterator = replicas.iterator();
+        Item item = iterator.next();
+        while (iterator.hasNext()) {
+            Item replica = iterator.next();
             if (replica.getVersion() > item.getVersion()) {
                 item = replica;
             }
@@ -102,9 +105,9 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         return item;
     }
 
-    private int getVersion(List<Item> replicas) throws RemoteException {
+    private int incrementLatestVersion(List<Item> replicas) throws RemoteException {
         int version = 1;
-        Item replica = getLatestVersionFromReplicas(replicas);
+        Item replica = getLatestVersionItem(replicas);
         if (replica != null) {
             version += replica.getVersion();
         }
