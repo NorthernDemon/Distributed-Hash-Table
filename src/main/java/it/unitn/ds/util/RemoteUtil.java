@@ -11,10 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Convenient class to deal with RMI for nodes
@@ -111,12 +108,14 @@ public abstract class RemoteUtil {
     }
 
     private static int getPredecessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
-        for (int nodeId : nodes.keySet()) {
-            if (nodeId <= targetNodeId) {
+        List<Integer> reverse = new ArrayList<>(nodes.keySet());
+        Collections.reverse(reverse);
+        for (int nodeId : reverse) {
+            if (nodeId < targetNodeId) {
                 return nodeId;
             }
         }
-        return nodes.keySet().iterator().next();
+        return reverse.iterator().next();
     }
 
     /**
