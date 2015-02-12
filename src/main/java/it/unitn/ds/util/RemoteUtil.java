@@ -248,10 +248,7 @@ public abstract class RemoteUtil {
                 Node node = getSuccessorNode(nodeId, coordinatorNode.getNodes());
                 if (node != null) {
                     int successorNodeId = getSuccessorNodeId(nodeId, coordinatorNode.getNodes(), Replication.N);
-                    NodeServer remoteNode = getRemoteNode(coordinatorNode.getNodes().get(successorNodeId), successorNodeId, NodeServer.class);
-                    if (!remoteNode.getNode().getItems().containsKey(node.getItems().keySet().iterator().next())) {
-                        remoteNode.updateReplicas(new ArrayList<>(node.getItems().values()));
-                    }
+                    getRemoteNode(coordinatorNode.getNodes().get(successorNodeId), successorNodeId, NodeServer.class).updateReplicas(new ArrayList<>(node.getItems().values()));
                 }
             }
         }
