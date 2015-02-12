@@ -257,6 +257,16 @@ public abstract class RemoteUtil {
         }
     }
 
+    public static void transferReplicas(Node successorNode, Node node) throws RemoteException {
+        for (int nodeId : getReplicaNodeIds(successorNode)) {
+            Node originalNode = getSuccessorNode(nodeId, node.getNodes());
+            ArrayList<Item> items = new ArrayList<>(originalNode.getItems().values());
+            int successorNodeId = getSuccessorNodeId(nodeId, originalNode.getNodes(), Replication.N);
+            getRemoteNode(originalNode.getNodes().get(successorNodeId), successorNodeId, NodeServer.class).removeReplicas(items);
+            getRemoteNode(node, NodeServer.class).updateReplicas(items);
+        }
+    }
+
     private static Set<Integer> getReplicaNodeIds(Node coordinatorNode) {
         Set<Integer> nodeIds = new HashSet<>();
         for (Item replica : coordinatorNode.getReplicas().values()) {

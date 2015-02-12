@@ -86,6 +86,7 @@ public final class ServerLauncher {
             node.putNodes(existingNodes);
             announceJoin();
             RemoteUtil.transferItems(successorNode, node);
+            RemoteUtil.transferReplicas(successorNode, node);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
     }
