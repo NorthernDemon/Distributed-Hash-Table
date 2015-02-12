@@ -17,12 +17,23 @@ public final class Node implements Serializable {
     private final String host;
 
     /**
+     * Own items, for which the node is responsible
+     * <p/>
      * Map<ItemKey, Item>
      */
     private final Map<Integer, Item> items = new TreeMap<>();
 
     /**
-     * Map<NodeId, Host>, including itself
+     * Replicated items from predecessor nodes
+     * <p/>
+     * Map<ItemKey, Item>
+     */
+    private final Map<Integer, Item> replicas = new TreeMap<>();
+
+    /**
+     * All known nodes in the ring, including itself
+     * <p/>
+     * Map<NodeId, Host>
      */
     private final Map<Integer, String> nodes = new TreeMap<>();
 
@@ -69,6 +80,26 @@ public final class Node implements Serializable {
         items.remove(key);
     }
 
+    public void putReplicas(List<Item> items) {
+        for (Item item : items) {
+            putReplica(item);
+        }
+    }
+
+    public void putReplica(Item item) {
+        replicas.put(item.getKey(), item);
+    }
+
+    public void removeReplicas(List<Item> items) {
+        for (Item item : items) {
+            removeReplica(item.getKey());
+        }
+    }
+
+    public void removeReplica(int key) {
+        replicas.remove(key);
+    }
+
     public int getId() {
         return id;
     }
@@ -79,6 +110,10 @@ public final class Node implements Serializable {
 
     public Map<Integer, Item> getItems() {
         return Collections.unmodifiableMap(items);
+    }
+
+    public Map<Integer, Item> getReplicas() {
+        return Collections.unmodifiableMap(replicas);
     }
 
     public Map<Integer, String> getNodes() {
@@ -110,6 +145,7 @@ public final class Node implements Serializable {
                 .add("id", id)
                 .add("host", host)
                 .add("items", Arrays.toString(items.keySet().toArray()))
+                .add("replicas", Arrays.toString(replicas.keySet().toArray()))
                 .add("nodes", Arrays.toString(nodes.entrySet().toArray()))
                 .toString();
     }

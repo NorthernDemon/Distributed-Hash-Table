@@ -24,4 +24,8 @@ public interface NodeServer extends Remote {
     void updateItems(List<Item> items) throws RemoteException;
 
     void removeItems(List<Item> items) throws RemoteException;
+
+    void updateReplicas(List<Item> replicas) throws RemoteException;
+
+    void removeReplicas(List<Item> replicas) throws RemoteException;
 }

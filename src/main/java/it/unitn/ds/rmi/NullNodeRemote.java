@@ -44,6 +44,14 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
     }
 
     @Override
+    public void updateReplicas(List<Item> replicas) throws RemoteException {
+    }
+
+    @Override
+    public void removeReplicas(List<Item> replicas) throws RemoteException {
+    }
+
+    @Override
     public Item getItem(int key) throws RemoteException {
         return item;
     }

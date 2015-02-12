@@ -68,6 +68,22 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
     }
 
+    @Override
+    public void updateReplicas(List<Item> replicas) throws RemoteException {
+        logger.debug("Update replicas=" + Arrays.toString(replicas.toArray()));
+        node.putReplicas(replicas);
+        StorageUtil.write(node);
+        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().values().toArray()));
+    }
+
+    @Override
+    public void removeReplicas(List<Item> replicas) throws RemoteException {
+        logger.debug("Remove replicas=" + Arrays.toString(replicas.toArray()));
+        node.removeReplicas(replicas);
+        StorageUtil.write(node);
+        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().values().toArray()));
+    }
+
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
@@ -84,7 +100,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
-        Item item = new Item(key, value, incrementLatestVersion(replicas));
+        Item item = new Item(key, value, incrementLatestVersion(replicas), node.getId());
         RemoteUtil.updateReplicas(node.getNodes(), item);
         return item;
     }

@@ -20,16 +20,20 @@ public final class Item implements Serializable {
 
     private final int version;
 
+    private final int nodeId;
+
     public Item() {
         this.key = 0;
         this.value = "";
         this.version = 0;
+        this.nodeId = 0;
     }
 
-    public Item(int key, String value, int version) {
+    public Item(int key, String value, int version, int nodeId) {
         this.key = key;
         this.value = value;
         this.version = version;
+        this.nodeId = nodeId;
     }
 
     public int getKey() {
@@ -44,6 +48,10 @@ public final class Item implements Serializable {
         return version;
     }
 
+    public int getNodeId() {
+        return nodeId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -52,7 +60,8 @@ public final class Item implements Serializable {
         if (o instanceof Item) {
             Item object = (Item) o;
 
-            return Objects.equals(key, object.key);
+            return Objects.equals(key, object.key) &&
+                    Objects.equals(version, object.version);
         }
 
         return false;
@@ -60,7 +69,7 @@ public final class Item implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key);
+        return Objects.hash(key, version);
     }
 
     @Override
@@ -69,6 +78,7 @@ public final class Item implements Serializable {
                 .add("key", key)
                 .add("value", value)
                 .add("version", version)
+                .add("nodeId", nodeId)
                 .toString();
     }
 }

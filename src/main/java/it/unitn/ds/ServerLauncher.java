@@ -104,8 +104,9 @@ public final class ServerLauncher {
         Node successorNode = RemoteUtil.getSuccessorNode(node);
         if (successorNode != null) {
             RemoteUtil.copyItems(node, successorNode);
-            announceLeave();
         }
+        RemoteUtil.removeReplicas(node);
+        announceLeave();
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
         StorageUtil.removeFile(node.getId());
         logger.info("NodeId=" + node.getId() + " disconnected");
