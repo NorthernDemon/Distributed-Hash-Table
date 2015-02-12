@@ -26,7 +26,7 @@ public abstract class StorageUtil {
     private static final String STORAGE_FOLDER = "storage";
 
     /**
-     * Creates/Updates list of new items into CSV file in format: {key},{value},{version}
+     * Creates/Updates list of new items into CSV file in format: {key},{value},{version},{nodeId}
      *
      * @param node responsible for item
      */
@@ -47,7 +47,7 @@ public abstract class StorageUtil {
     }
 
     /**
-     * Returns an item by key from CSV file of the provided node
+     * Returns an item by key from CSV file of the provided node in format: {key},{value},{version},{nodeId}
      *
      * @param nodeId responsible for item
      * @param key    of the item

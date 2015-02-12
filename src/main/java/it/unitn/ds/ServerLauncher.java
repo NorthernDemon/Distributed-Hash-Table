@@ -106,6 +106,7 @@ public final class ServerLauncher {
             RemoteUtil.copyItems(node, successorNode);
         }
         RemoteUtil.removeReplicas(node);
+        RemoteUtil.passReplicas(node);
         announceLeave();
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
         StorageUtil.removeFile(node.getId());
