@@ -100,9 +100,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
-        Item item = new Item(key, value, incrementLatestVersion(replicas), node.getId());
-        RemoteUtil.updateReplicas(node.getNodes(), item);
-        return item;
+        return RemoteUtil.updateReplicas(node.getNodes(), key, value, incrementLatestVersion(replicas));
     }
 
     @Nullable

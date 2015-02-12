@@ -30,7 +30,7 @@ public final class ServerLauncher {
      * Example: join,localhost,10,none,0
      * Example: join,localhost,15,localhost,10
      * Example: join,localhost,20,localhost,15
-     * Example: join,localhost,25,localhost,10
+     * Example: join,localhost,25,localhost,20
      * Example: leave
      */
     public static void main(String[] args) {
@@ -39,7 +39,7 @@ public final class ServerLauncher {
         logger.info("Example: join,localhost,10,localhost,0");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
-        logger.info("Example: join,localhost,25,localhost,10");
+        logger.info("Example: join,localhost,25,localhost,20");
         logger.info("Example: leave");
         StorageUtil.init();
         InputUtil.readInput(ServerLauncher.class.getName());
@@ -86,7 +86,7 @@ public final class ServerLauncher {
             node.putNodes(existingNodes);
             announceJoin();
             RemoteUtil.transferItems(successorNode, node);
-            RemoteUtil.transferReplicas(successorNode, node);
+            RemoteUtil.transferReplicas(successorNode);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
     }
@@ -102,12 +102,11 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
+        RemoteUtil.transferReplicas(node);
         Node successorNode = RemoteUtil.getSuccessorNode(node);
         if (successorNode != null) {
             RemoteUtil.copyItems(node, successorNode);
         }
-        RemoteUtil.removeReplicas(node);
-        RemoteUtil.passReplicas(node);
         announceLeave();
         Naming.unbind(RemoteUtil.getRMI(node.getHost(), node.getId()));
         StorageUtil.removeFile(node.getId());

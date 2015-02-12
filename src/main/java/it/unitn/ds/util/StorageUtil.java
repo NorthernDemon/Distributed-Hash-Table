@@ -41,7 +41,10 @@ public abstract class StorageUtil {
 
     private static void writeItem(PrintWriter writer, Collection<Item> items) {
         for (Item item : items) {
-            writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + SEPARATOR + item.getNodeId() + "\n");
+            writer.write(item.getKey() + SEPARATOR +
+                    item.getValue() + SEPARATOR +
+                    item.getVersion() + SEPARATOR +
+                    item.getNodeId() + "\n");
             logger.debug("Storage wrote an item=" + item);
         }
     }
@@ -58,7 +61,11 @@ public abstract class StorageUtil {
             for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
                 if (line.startsWith(key + SEPARATOR)) {
                     Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
-                    Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()), Integer.parseInt(it.next()));
+                    Item item = new Item(
+                            Integer.parseInt(it.next()),
+                            it.next(),
+                            Integer.parseInt(it.next()),
+                            Integer.parseInt(it.next()));
                     logger.debug("Storage of node=" + nodeId + " read an item=" + item);
                     return item;
                 }
