@@ -20,20 +20,16 @@ public final class Item implements Serializable {
 
     private final int version;
 
-    private final int nodeId;
-
     public Item() {
         this.key = 0;
         this.value = "";
         this.version = 0;
-        this.nodeId = 0;
     }
 
-    public Item(int key, String value, int version, int nodeId) {
+    public Item(int key, String value, int version) {
         this.key = key;
         this.value = value;
         this.version = version;
-        this.nodeId = nodeId;
     }
 
     public int getKey() {
@@ -46,10 +42,6 @@ public final class Item implements Serializable {
 
     public int getVersion() {
         return version;
-    }
-
-    public int getNodeId() {
-        return nodeId;
     }
 
     @Override
@@ -78,7 +70,6 @@ public final class Item implements Serializable {
                 .add("key", key)
                 .add("value", value)
                 .add("version", version)
-                .add("nodeId", nodeId)
                 .toString();
     }
 }
