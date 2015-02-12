@@ -86,7 +86,7 @@ public final class ServerLauncher {
             node.putNodes(existingNodes);
             announceJoin();
             RemoteUtil.transferItems(successorNode, node);
-//            RemoteUtil.transferReplicas(successorNode);
+            RemoteUtil.moveReplicas(successorNode, node);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
     }
@@ -102,6 +102,7 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
+        RemoteUtil.replicateItems(node);
         RemoteUtil.transferReplicas(node);
         Node successorNode = RemoteUtil.getSuccessorNode(node);
         if (successorNode != null) {

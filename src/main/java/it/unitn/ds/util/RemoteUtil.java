@@ -28,6 +28,9 @@ public abstract class RemoteUtil {
      * @return reference to remote object
      */
     private static <T> T getRemoteNode(Node node, Class<T> clazz) {
+        if (node == null) {
+            return getNullNodeRemote(clazz);
+        }
         return getRemoteNode(node.getHost(), node.getId(), clazz);
     }
 
@@ -44,12 +47,16 @@ public abstract class RemoteUtil {
             return clazz.cast(Naming.lookup(getRMI(host, nodeId)));
         } catch (Exception e) {
             logger.error("Failed to get Remote Interface for nodeId=" + nodeId, e);
-            try {
-                return clazz.cast(new NullNodeRemote());
-            } catch (RemoteException re) {
-                logger.error("Failed to get Null Node Pattern for nodeId=" + nodeId, re);
-                return null;
-            }
+            return getNullNodeRemote(clazz);
+        }
+    }
+
+    private static <T> T getNullNodeRemote(Class<T> clazz) {
+        try {
+            return clazz.cast(new NullNodeRemote());
+        } catch (RemoteException re) {
+            logger.error("Failed to get Null Node Pattern", re);
+            return null;
         }
     }
 
@@ -77,6 +84,9 @@ public abstract class RemoteUtil {
      */
     @Nullable
     public static Node getSuccessorNode(Node node) throws RemoteException {
+        if (node == null) {
+            return null;
+        }
         return getSuccessorNode(node.getId(), node.getNodes());
     }
 
@@ -149,6 +159,8 @@ public abstract class RemoteUtil {
         List<Item> items = getTransferItems(fromNode, toNode);
         getRemoteNode(toNode, NodeServer.class).updateItems(items);
         getRemoteNode(fromNode, NodeServer.class).removeItems(items);
+        getRemoteNode(fromNode, NodeServer.class).updateReplicas(items);
+        getRemoteNode(getLastReplication(toNode).getNode(), NodeServer.class).removeReplicas(items);
         logger.debug("Transferred items fromNode=" + fromNode + " node=" + toNode + " items=" + Arrays.toString(items.toArray()));
     }
 
@@ -224,28 +236,42 @@ public abstract class RemoteUtil {
         return null;
     }
 
+    public static void moveReplicas(Node fromNode, Node toNode) throws RemoteException {
+        getRemoteNode(toNode, NodeServer.class).updateReplicas(new ArrayList<>(fromNode.getReplicas().values()));
+        Set<Integer> visitedNodes = new HashSet<>();
+        for (Item items : fromNode.getReplicas().values()) {
+            int nodeIdForItemKey = getNodeIdForItemKey(items.getKey(), fromNode.getNodes());
+            if (!visitedNodes.contains(nodeIdForItemKey)) {
+                visitedNodes.add(nodeIdForItemKey);
+                Node originalNode = getRemoteNode(fromNode.getNodes().get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode();
+                NodeServer remoteNode = getLastReplication(originalNode);
+                remoteNode.removeReplicas(new ArrayList<>(fromNode.getReplicas().values()));
+                logger.debug("Removed replicated item=" + Arrays.toString(fromNode.getReplicas().keySet().toArray()) + " from node=" + remoteNode.getNode());
+            }
+        }
+    }
+
     public static void transferReplicas(Node node) throws RemoteException {
-        passReplica(node);
         Set<Integer> visitedNodes = new HashSet<>();
         for (Item items : node.getReplicas().values()) {
             int nodeIdForItemKey = getNodeIdForItemKey(items.getKey(), node.getNodes());
             if (!visitedNodes.contains(nodeIdForItemKey)) {
                 visitedNodes.add(nodeIdForItemKey);
-                passReplica(getRemoteNode(node.getNodes().get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode());
+                replicateItems(getRemoteNode(node.getNodes().get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode());
             }
         }
     }
 
-    private static void passReplica(Node node) throws RemoteException {
-        NodeServer remoteNode = getSuccessorNodeServer(node, Replication.N);
+    public static void replicateItems(Node node) throws RemoteException {
+        NodeServer remoteNode = getLastReplication(node);
         if (node.getId() != remoteNode.getNode().getId()) {
             remoteNode.updateReplicas(new ArrayList<>(node.getItems().values()));
             logger.debug("Replicated item=" + Arrays.toString(node.getItems().keySet().toArray()) + " to node=" + remoteNode.getNode());
         }
     }
 
-    private static NodeServer getSuccessorNodeServer(Node node, int orderCount) throws RemoteException {
-        for (int i = 0; i < orderCount; i++) {
+    private static NodeServer getLastReplication(Node node) throws RemoteException {
+        for (int i = 0; i < Replication.N; i++) {
             node = getSuccessorNode(node);
         }
         return getRemoteNode(node, NodeServer.class);
