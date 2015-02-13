@@ -3,7 +3,7 @@ package it.unitn.ds;
 /**
  * Static arbitrary values for replication
  * <p/>
- * Must maintain the formula W + R > N to avoid read/write conflicts
+ * Must maintain the formula [ W + R > N ] to avoid read/write conflicts
  */
 public interface Replication {
 

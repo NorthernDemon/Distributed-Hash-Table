@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,16 +38,16 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     }
 
     @Override
-    public void addNode(int nodeId, String host) throws RemoteException {
-        logger.debug("Add node=" + nodeId + ", host=" + host);
-        node.putNode(nodeId, host);
+    public void addNode(int id, String host) throws RemoteException {
+        logger.debug("Add id=" + id + ", host=" + host);
+        node.putNode(id, host);
         logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
     @Override
-    public void removeNode(int nodeId) throws RemoteException {
-        logger.debug("Remove node=" + nodeId);
-        node.removeNode(nodeId);
+    public void removeNode(int id) throws RemoteException {
+        logger.debug("Remove id=" + id);
+        node.removeNode(id);
         logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
     }
 
@@ -57,7 +56,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         logger.debug("Update items=" + Arrays.toString(items.toArray()));
         node.putItems(items);
         StorageUtil.write(node);
-        logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
+        logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
     }
 
     @Override
@@ -65,7 +64,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         logger.debug("Remove items=" + Arrays.toString(items.toArray()));
         node.removeItems(items);
         StorageUtil.write(node);
-        logger.debug("Current items=" + Arrays.toString(node.getItems().values().toArray()));
+        logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
     }
 
     @Override
@@ -73,7 +72,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         logger.debug("Update replicas=" + Arrays.toString(replicas.toArray()));
         node.putReplicas(replicas);
         StorageUtil.write(node);
-        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().values().toArray()));
+        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
     }
 
     @Override
@@ -81,50 +80,29 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         logger.debug("Remove replicas=" + Arrays.toString(replicas.toArray()));
         node.removeReplicas(replicas);
         StorageUtil.write(node);
-        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().values().toArray()));
+        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
     }
 
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        Item item = getLatestVersionItem(RemoteUtil.getReplicas(node.getNodes(), key));
-        logger.debug("Got item=" + item);
+        logger.debug("Get replica item with key=" + key);
+        Item item = RemoteUtil.getLatestVersionItem(node.getNodes(), key);
+        logger.debug("Got replica item=" + item);
         return item;
     }
 
     @Nullable
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
-        List<Item> replicas = RemoteUtil.getReplicas(node.getNodes(), key);
-        if (!replicas.isEmpty() && replicas.size() != Math.max(Replication.R, Replication.W)) {
-            logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
+        logger.debug("Update replica item with key=" + key + ", value=" + value);
+        int replicaSize = RemoteUtil.getReplicas(node.getNodes(), key).size();
+        if (replicaSize != Math.max(Replication.R, Replication.W)) {
+            logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicaSize + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
-        return RemoteUtil.updateReplicas(node.getNodes(), key, value, incrementLatestVersion(replicas));
-    }
-
-    @Nullable
-    private Item getLatestVersionItem(List<Item> replicas) throws RemoteException {
-        if (replicas.isEmpty()) {
-            return null;
-        }
-        Iterator<Item> iterator = replicas.iterator();
-        Item item = iterator.next();
-        while (iterator.hasNext()) {
-            Item replica = iterator.next();
-            if (replica.getVersion() > item.getVersion()) {
-                item = replica;
-            }
-        }
+        Item item = RemoteUtil.updateReplicas(node.getNodes(), key, value);
+        logger.debug("Updated replica item=" + item);
         return item;
-    }
-
-    private int incrementLatestVersion(List<Item> replicas) throws RemoteException {
-        int version = 1;
-        Item replica = getLatestVersionItem(replicas);
-        if (replica != null) {
-            version += replica.getVersion();
-        }
-        return version;
     }
 }

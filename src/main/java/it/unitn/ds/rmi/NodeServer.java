@@ -17,9 +17,9 @@ public interface NodeServer extends Remote {
 
     Map<Integer, String> getNodes() throws RemoteException;
 
-    void addNode(int nodeId, String host) throws RemoteException;
+    void addNode(int id, String host) throws RemoteException;
 
-    void removeNode(int nodeId) throws RemoteException;
+    void removeNode(int id) throws RemoteException;
 
     void updateItems(List<Item> items) throws RemoteException;
 

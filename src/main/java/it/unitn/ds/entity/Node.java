@@ -35,6 +35,7 @@ public final class Node implements Serializable {
      * <p/>
      * Map<NodeId, Host>
      */
+    // TODO should this be a double linked list instead ?
     private final Map<Integer, String> nodes = new TreeMap<>();
 
     public Node() {

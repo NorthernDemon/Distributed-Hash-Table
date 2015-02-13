@@ -28,11 +28,11 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
     }
 
     @Override
-    public void addNode(int nodeId, String host) throws RemoteException {
+    public void addNode(int id, String host) throws RemoteException {
     }
 
     @Override
-    public void removeNode(int nodeId) throws RemoteException {
+    public void removeNode(int id) throws RemoteException {
     }
 
     @Override

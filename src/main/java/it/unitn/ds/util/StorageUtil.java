@@ -32,14 +32,14 @@ public abstract class StorageUtil {
      */
     public static void write(Node node) {
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
-            writeItem(writer, node.getItems().values());
-            writeItem(writer, node.getReplicas().values());
+            writeItems(writer, node.getItems().values());
+            writeItems(writer, node.getReplicas().values());
         } catch (Exception e) {
             logger.error("Failed to write items of the node=" + node, e);
         }
     }
 
-    private static void writeItem(PrintWriter writer, Collection<Item> items) {
+    private static void writeItems(PrintWriter writer, Collection<Item> items) {
         for (Item item : items) {
             writer.write(item.getKey() + SEPARATOR +
                     item.getValue() + SEPARATOR +

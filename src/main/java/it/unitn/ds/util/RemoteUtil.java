@@ -67,7 +67,7 @@ public abstract class RemoteUtil {
      * @param nodes set of possible nodes
      * @return node id
      */
-    public static int getNodeIdForItemKey(int key, Map<Integer, String> nodes) {
+    private static int getNodeIdForItemKey(int key, Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
             if (nodeId >= key) {
                 return nodeId;
@@ -186,12 +186,11 @@ public abstract class RemoteUtil {
         return items;
     }
 
-    public static List<Item> getReplicas(Map<Integer, String> nodes, int key) throws RemoteException {
-        int nodeIdForItemKey = getNodeIdForItemKey(key, nodes);
-        Node node = getRemoteNode(nodes.get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode();
+    public static List<Item> getReplicas(Map<Integer, String> nodes, int itemKey) throws RemoteException {
+        Node node = getNodeForItem(nodes, itemKey);
         if (node != null) {
             List<Item> items = new ArrayList<>(Replication.N);
-            Item item = node.getItems().get(key);
+            Item item = node.getItems().get(itemKey);
             if (item != null) {
                 items.add(item);
                 logger.debug("Got original item=" + item + " from node=" + node);
@@ -200,7 +199,7 @@ public abstract class RemoteUtil {
                 if (node != null) {
                     node = getSuccessorNode(node);
                     if (node != null && i != Replication.R) {
-                        item = node.getReplicas().get(key);
+                        item = node.getReplicas().get(itemKey);
                         if (item != null) {
                             items.add(item);
                             logger.debug("Got replicas of item=" + item + " from node=" + node);
@@ -214,11 +213,10 @@ public abstract class RemoteUtil {
     }
 
     @Nullable
-    public static Item updateReplicas(Map<Integer, String> nodes, int itemKey, String itemValue, int itemVersion) throws RemoteException {
-        int nodeIdForItemKey = getNodeIdForItemKey(itemKey, nodes);
-        Node node = getRemoteNode(nodes.get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode();
+    public static Item updateReplicas(Map<Integer, String> nodes, int itemKey, String itemValue) throws RemoteException {
+        Node node = getNodeForItem(nodes, itemKey);
         if (node != null) {
-            final Item item = new Item(itemKey, itemValue, itemVersion);
+            final Item item = new Item(itemKey, itemValue, incrementLatestVersion(nodes, itemKey));
             List<Item> items = new ArrayList<Item>() {{
                 add(item);
             }};
@@ -234,6 +232,11 @@ public abstract class RemoteUtil {
             return item;
         }
         return null;
+    }
+
+    private static Node getNodeForItem(Map<Integer, String> nodes, int itemKey) throws RemoteException {
+        int nodeIdForItemKey = getNodeIdForItemKey(itemKey, nodes);
+        return getRemoteNode(nodes.get(nodeIdForItemKey), nodeIdForItemKey, NodeServer.class).getNode();
     }
 
     public static void moveReplicas(Node fromNode, Node toNode) throws RemoteException {
@@ -275,6 +278,32 @@ public abstract class RemoteUtil {
             node = getSuccessorNode(node);
         }
         return getRemoteNode(node, NodeServer.class);
+    }
+
+    @Nullable
+    public static Item getLatestVersionItem(Map<Integer, String> nodes, int key) throws RemoteException {
+        List<Item> replicas = getReplicas(nodes, key);
+        if (replicas.isEmpty()) {
+            return null;
+        }
+        Iterator<Item> iterator = replicas.iterator();
+        Item item = iterator.next();
+        while (iterator.hasNext()) {
+            Item replica = iterator.next();
+            if (replica.getVersion() > item.getVersion()) {
+                item = replica;
+            }
+        }
+        return item;
+    }
+
+    private static int incrementLatestVersion(Map<Integer, String> nodes, int key) throws RemoteException {
+        int version = 1;
+        Item replica = getLatestVersionItem(nodes, key);
+        if (replica != null) {
+            version += replica.getVersion();
+        }
+        return version;
     }
 
     /**

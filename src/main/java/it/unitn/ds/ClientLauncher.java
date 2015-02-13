@@ -31,38 +31,41 @@ public final class ClientLauncher {
     }
 
     /**
-     * Get item given node id and item key
+     * Get item given node id and item itemKey
      *
-     * @param nodeId of the known node, does not have to contain item key
-     * @param key    of the item
+     * @param coordinatorHost   of the known node
+     * @param coordinatorNodeId of the known node, does not have to contain item itemKey
+     * @param itemKey           of the item
      */
-    public static void get(String host, int nodeId, int key) throws RemoteException {
-        Item item = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class).getItem(key);
-        logger.info("Got item=" + item + " from nodeId=" + nodeId);
+    public static void get(String coordinatorHost, int coordinatorNodeId, int itemKey) throws RemoteException {
+        Item item = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeClient.class).getItem(itemKey);
+        logger.info("Got item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
-     * Update item given node id and item key
+     * Update item given node id and item itemKey
      *
-     * @param nodeId of the known node, does not have to contain item key
-     * @param key    of the item
-     * @param value  new item value
+     * @param coordinatorHost   of the known node
+     * @param coordinatorNodeId of the known node, does not have to contain item itemKey
+     * @param itemKey           of the item
+     * @param itemValue         new item itemValue
      */
-    public static void update(String host, int nodeId, int key, String value) throws RemoteException {
-        Item item = RemoteUtil.getRemoteNode(host, nodeId, NodeClient.class).updateItem(key, value);
-        logger.info("Updated item=" + item + " from nodeId=" + nodeId);
+    public static void update(String coordinatorHost, int coordinatorNodeId, int itemKey, String itemValue) throws RemoteException {
+        Item item = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeClient.class).updateItem(itemKey, itemValue);
+        logger.info("Updated item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
      * View ring topology from the given node id
      *
+     * @param coordinatorHost   of the known node
      * @param coordinatorNodeId of the known node
      */
-    public static void view(String host, int coordinatorNodeId) throws RemoteException {
-        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(host, coordinatorNodeId, NodeServer.class).getNodes();
+    public static void view(String coordinatorHost, int coordinatorNodeId) throws RemoteException {
+        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeServer.class).getNodes();
         for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
-            NodeServer remoteNode = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
-            logger.debug("Node=" + remoteNode.getNode());
+            NodeServer nodeServer = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
+            logger.debug("Node=" + nodeServer.getNode());
         }
         logger.info("Viewed topology from coordinatorNodeId=" + coordinatorNodeId);
     }
