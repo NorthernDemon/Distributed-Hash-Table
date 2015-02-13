@@ -168,6 +168,11 @@ public final class ServerLauncher {
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
             logger.debug("Removed replica=" + replica + " from node=" + nthSuccessor);
         }
+        if (successorNode.getNodes().size() == 1) {
+            List<Item> items = new ArrayList<>(successorNode.getItems().values());
+            items.removeAll(node.getItems().values());
+            RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(items);
+        }
     }
 
     /**
