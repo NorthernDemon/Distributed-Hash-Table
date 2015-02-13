@@ -186,7 +186,7 @@ public abstract class RemoteUtil {
         return items;
     }
 
-    public static List<Item> getReplicas(Map<Integer, String> nodes, int itemKey) throws RemoteException {
+    private static List<Item> getReplicas(Map<Integer, String> nodes, int itemKey) throws RemoteException {
         Node node = getNodeForItem(nodes, itemKey);
         if (node != null) {
             List<Item> items = new ArrayList<>(Replication.N);
@@ -214,6 +214,11 @@ public abstract class RemoteUtil {
 
     @Nullable
     public static Item updateReplicas(Map<Integer, String> nodes, int itemKey, String itemValue) throws RemoteException {
+        int replicaSize = getReplicas(nodes, itemKey).size();
+        if (replicaSize != Math.max(Replication.R, Replication.W)) {
+            logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicaSize + ", R=" + Replication.R + ", W=" + Replication.W);
+            return null;
+        }
         Node node = getNodeForItem(nodes, itemKey);
         if (node != null) {
             final Item item = new Item(itemKey, itemValue, incrementLatestVersion(nodes, itemKey));

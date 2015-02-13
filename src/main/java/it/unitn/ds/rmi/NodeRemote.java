@@ -1,6 +1,5 @@
 package it.unitn.ds.rmi;
 
-import it.unitn.ds.Replication;
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.util.RemoteUtil;
@@ -96,11 +95,6 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
         logger.debug("Update replica item with key=" + key + ", value=" + value);
-        int replicaSize = RemoteUtil.getReplicas(node.getNodes(), key).size();
-        if (replicaSize != Math.max(Replication.R, Replication.W)) {
-            logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicaSize + ", R=" + Replication.R + ", W=" + Replication.W);
-            return null;
-        }
         Item item = RemoteUtil.updateReplicas(node.getNodes(), key, value);
         logger.debug("Updated replica item=" + item);
         return item;
