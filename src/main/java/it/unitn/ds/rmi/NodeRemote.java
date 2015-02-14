@@ -85,7 +85,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Override
     public Item getItem(int key) throws RemoteException {
         logger.debug("Get replica item with key=" + key);
-        Item item = getLatestVersionItem(getReplicas(node.getNodes(), key));
+        Item item = getItemReplica(key);
         logger.debug("Got replica item=" + item);
         return item;
     }
@@ -94,57 +94,53 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
         logger.debug("Update replica item with key=" + key + ", value=" + value);
-        Item item = updateReplicas(node.getNodes(), key, value);
+        Item item = updateReplicas(key, value);
         logger.debug("Updated replica item=" + item);
         return item;
     }
 
-    private List<Item> getReplicas(Map<Integer, String> nodes, int itemKey) throws RemoteException {
-        Node originalNode = RemoteUtil.getNodeForItem(itemKey, nodes);
-        if (originalNode != null) {
-            List<Item> items = new ArrayList<>(Replication.N);
-            Item item = originalNode.getItems().get(itemKey);
-            if (item != null) {
-                items.add(item);
-                logger.debug("Got original item=" + item + " from originalNode=" + originalNode);
-            }
-            for (int i = 1; i < Replication.N; i++) {
-                Node node = RemoteUtil.getNthSuccessor(originalNode, i);
-                if (node != null && i != Replication.R) {
-                    item = node.getReplicas().get(itemKey);
-                    if (item != null) {
-                        items.add(item);
-                        logger.debug("Got replicas of item=" + item + " from node=" + node);
-                    }
-                }
-            }
-            return items;
+    private List<Item> getReplicas(int itemKey) throws RemoteException {
+        Node originalNode = RemoteUtil.getNodeForItem(itemKey, node.getNodes());
+        List<Item> items = new ArrayList<>(Replication.N);
+        Item item = originalNode.getItems().get(itemKey);
+        if (item != null) {
+            items.add(item);
+            logger.debug("Got original item=" + item + " from originalNode=" + originalNode);
         }
-        return Collections.emptyList();
+        for (int i = 1; i < Replication.N; i++) {
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), i);
+            if (items.size() != Replication.R) {
+                item = nthSuccessor.getReplicas().get(itemKey);
+                if (item != null) {
+                    items.add(item);
+                    logger.debug("Got replicas of item=" + item + " from nthSuccessor=" + nthSuccessor);
+                }
+            } else {
+                return items;
+            }
+        }
+        return items;
     }
 
     @Nullable
-    private Item updateReplicas(Map<Integer, String> nodes, int itemKey, String itemValue) throws RemoteException {
-        List<Item> replicas = getReplicas(nodes, itemKey);
+    private Item updateReplicas(int itemKey, String itemValue) throws RemoteException {
+        List<Item> replicas = getReplicas(itemKey);
         if (!replicas.isEmpty() && replicas.size() != Math.max(Replication.R, Replication.W)) {
             logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
-        Node originalNode = RemoteUtil.getNodeForItem(itemKey, nodes);
-        if (originalNode != null) {
-            Item item = new Item(itemKey, itemValue, incrementLatestVersion(replicas));
-            RemoteUtil.getRemoteNode(originalNode, NodeServer.class).updateItems(Arrays.asList(item));
-            logger.debug("Replicated original item=" + item + " to originalNode=" + originalNode);
-            for (int i = 1; i < Replication.N; i++) {
-                Node node = RemoteUtil.getNthSuccessor(originalNode, i);
-                if (node != null && node.getId() != originalNode.getId()) {
-                    RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(Arrays.asList(item));
-                    logger.debug("Replicated item=" + item + " to node=" + node);
-                }
+        Node originalNode = RemoteUtil.getNodeForItem(itemKey, node.getNodes());
+        Item item = new Item(itemKey, itemValue, incrementLatestVersion(replicas));
+        RemoteUtil.getRemoteNode(originalNode, NodeServer.class).updateItems(Arrays.asList(item));
+        logger.debug("Replicated original item=" + item + " to originalNode=" + originalNode);
+        for (int i = 1; i < Replication.N; i++) {
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), i);
+            if (nthSuccessor != null && nthSuccessor.getId() != originalNode.getId()) {
+                RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(item));
+                logger.debug("Replicated item=" + item + " to nthSuccessor=" + nthSuccessor);
             }
-            return item;
         }
-        return null;
+        return getItemReplica(itemKey);
     }
 
     private int incrementLatestVersion(List<Item> replicas) throws RemoteException {
@@ -154,6 +150,10 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             version += item.getVersion();
         }
         return version;
+    }
+
+    private Item getItemReplica(int itemKey) throws RemoteException {
+        return getLatestVersionItem(getReplicas(itemKey));
     }
 
     @Nullable

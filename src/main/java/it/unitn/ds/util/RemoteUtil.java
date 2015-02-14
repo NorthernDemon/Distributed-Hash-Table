@@ -65,6 +65,16 @@ public abstract class RemoteUtil {
     }
 
     /**
+     * Returns RMI string of the node for given node
+     *
+     * @param node the current node
+     * @return default lookup string
+     */
+    public static String getNodeRMI(Node node) {
+        return getNodeRMI(node.getHost(), node.getId());
+    }
+
+    /**
      * Returns RMI string of the node for given host and id
      *
      * @param host network host
@@ -78,7 +88,7 @@ public abstract class RemoteUtil {
     @Nullable
     private static <T> T getNullNodeRemote(Class<T> clazz) {
         try {
-            return clazz.cast(new NullNodeRemote());
+            return clazz.cast(new NullNodeRemote(new Node()));
         } catch (RemoteException re) {
             logger.error("Failed to get Null Node Pattern", re);
             return null;
@@ -173,16 +183,17 @@ public abstract class RemoteUtil {
     /**
      * Returns Nth successor of the given node
      *
-     * @param originalNode current node
-     * @param count        how many nodes to skip
+     * @param node  current node
+     * @param count how many nodes to skip
+     * @param nodes set of known nodes
      * @return successor node
      * @throws RemoteException in case of RMI exception
      */
-    public static Node getNthSuccessor(Node originalNode, int count) throws RemoteException {
-        int nodeId = originalNode.getId();
+    public static Node getNthSuccessor(Node node, Map<Integer, String> nodes, int count) throws RemoteException {
+        int nodeId = node.getId();
         for (int i = 0; i < count; i++) {
-            nodeId = getSuccessorNodeId(nodeId, originalNode.getNodes());
+            nodeId = getSuccessorNodeId(nodeId, nodes);
         }
-        return getRemoteNode(originalNode.getNodes(), nodeId, NodeServer.class).getNode();
+        return getRemoteNode(nodes, nodeId, NodeServer.class).getNode();
     }
 }

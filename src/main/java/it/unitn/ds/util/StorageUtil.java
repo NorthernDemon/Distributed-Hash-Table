@@ -6,6 +6,7 @@ import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -55,6 +56,7 @@ public abstract class StorageUtil {
      * @param key    of the item
      * @return an item fetched by key from given node
      */
+    @Nullable
     public static Item read(int nodeId, int key) {
         try {
             for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
@@ -71,7 +73,7 @@ public abstract class StorageUtil {
         } catch (Exception e) {
             logger.error("Failed to read item with key=" + key + " for nodeId=" + nodeId, e);
         }
-        return new Item();
+        return null;
     }
 
     /**

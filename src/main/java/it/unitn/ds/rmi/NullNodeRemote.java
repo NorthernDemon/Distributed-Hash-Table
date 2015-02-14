@@ -2,19 +2,20 @@ package it.unitn.ds.rmi;
 
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
+import org.jetbrains.annotations.Nullable;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public final class NullNodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
-    private final Node node = new Node();
+    private final Node node;
 
-    private final Item item = new Item();
-
-    public NullNodeRemote() throws RemoteException {
+    public NullNodeRemote(Node node) throws RemoteException {
+        this.node = node;
     }
 
     @Override
@@ -24,7 +25,7 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
 
     @Override
     public Map<Integer, String> getNodes() throws RemoteException {
-        return node.getNodes();
+        return Collections.emptyMap();
     }
 
     @Override
@@ -51,13 +52,15 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
     public void removeReplicas(List<Item> replicas) throws RemoteException {
     }
 
+    @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        return item;
+        return null;
     }
 
+    @Nullable
     @Override
     public Item updateItem(int key, String value) throws RemoteException {
-        return item;
+        return null;
     }
 }

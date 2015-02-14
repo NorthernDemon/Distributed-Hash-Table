@@ -49,6 +49,10 @@ public final class Node implements Serializable {
         nodes.put(id, host);
     }
 
+    public Node(Node node) {
+        this(node.id, node.host);
+    }
+
     public void putNodes(Map<Integer, String> existingNodes) {
         nodes.putAll(existingNodes);
     }

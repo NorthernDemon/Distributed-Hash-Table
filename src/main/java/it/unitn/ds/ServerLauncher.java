@@ -4,6 +4,7 @@ import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeRemote;
 import it.unitn.ds.rmi.NodeServer;
+import it.unitn.ds.rmi.NullNodeRemote;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
 import it.unitn.ds.util.StorageUtil;
@@ -28,12 +29,15 @@ public final class ServerLauncher {
     @Nullable
     private static Node node;
 
+    private static NodeState nodeState = NodeState.LEFT;
+
     /**
      * Description: method name,node host,node id,existing node host, existing node id
      * Example: join,localhost,10,none,0
      * Example: join,localhost,15,localhost,10
      * Example: join,localhost,20,localhost,15
      * Example: join,localhost,25,localhost,20
+     * Example: crash,localhost,20
      * Example: leave
      */
     public static void main(String[] args) {
@@ -43,6 +47,7 @@ public final class ServerLauncher {
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
         logger.info("Example: join,localhost,25,localhost,20");
+        logger.info("Example: crash,localhost,20");
         logger.info("Example: leave");
         StorageUtil.init();
         InputUtil.readInput(ServerLauncher.class.getName());
@@ -59,7 +64,7 @@ public final class ServerLauncher {
      * @throws Exception in case of RMI error
      */
     public static void join(String nodeHost, int nodeId, String existingNodeHost, int existingNodeId) throws Exception {
-        if (isConnected()) {
+        if (nodeState != NodeState.LEFT) {
             logger.warn("Cannot join without leaving first!");
             return;
         }
@@ -91,6 +96,7 @@ public final class ServerLauncher {
             replicateItems(successorNode);
             logger.info("NodeId=" + nodeId + " connected as node=" + node + " with successorNode=" + successorNode);
         }
+        nodeState = NodeState.JOINED;
     }
 
     /**
@@ -99,7 +105,7 @@ public final class ServerLauncher {
      * @throws Exception in case of RMI error
      */
     public static void leave() throws Exception {
-        if (!isConnected()) {
+        if (nodeState != NodeState.JOINED) {
             logger.warn("Cannot leave without joining first!");
             return;
         }
@@ -115,10 +121,27 @@ public final class ServerLauncher {
             }
         }
         announceLeave();
-        Naming.unbind(RemoteUtil.getNodeRMI(node.getHost(), node.getId()));
+        Naming.unbind(RemoteUtil.getNodeRMI(node));
         StorageUtil.removeFile(node.getId());
         logger.info("NodeId=" + node.getId() + " disconnected");
         node = null;
+        nodeState = NodeState.LEFT;
+    }
+
+    /**
+     * Signals current node to crash, removes local knowledge of any in memory data, except for node id and host
+     * Persistent storage (CSV file with items) remains untouched
+     */
+    public static void crash() throws Exception {
+        if (nodeState != NodeState.JOINED) {
+            logger.warn("Cannot crash without joining first!");
+            return;
+        }
+        logger.info("NodeId=" + node.getId() + " is crashing down...");
+        node = new Node(node);
+        Naming.rebind(RemoteUtil.getNodeRMI(node), new NullNodeRemote(node));
+        logger.info("NodeId=" + node.getId() + " has crashed");
+        nodeState = NodeState.CRASHED;
     }
 
     /**
@@ -135,7 +158,7 @@ public final class ServerLauncher {
             public void run() {
                 logger.info("Auto-leaving process initiated...");
                 try {
-                    if (isConnected()) {
+                    if (nodeState == NodeState.JOINED) {
                         leave();
                     }
                 } catch (Exception e) {
@@ -155,7 +178,7 @@ public final class ServerLauncher {
         if (!successorNode.getItems().isEmpty()) {
             List<Item> items = getNodeItems(successorNode);
             RemoteUtil.getRemoteNode(node, NodeServer.class).updateItems(items);
-            RemoteUtil.getRemoteNode(RemoteUtil.getNthSuccessor(node, Replication.N), NodeServer.class).removeReplicas(items);
+            RemoteUtil.getRemoteNode(RemoteUtil.getNthSuccessor(node, node.getNodes(), Replication.N), NodeServer.class).removeReplicas(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).removeItems(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).updateReplicas(items);
             logger.debug("Transferred items=" + Arrays.toString(items.toArray()) + " from successorNode=" + successorNode);
@@ -164,7 +187,7 @@ public final class ServerLauncher {
         RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(replicas);
         for (Item replica : replicas) {
             Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), successorNode.getNodes());
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), Replication.N);
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
             logger.debug("Removed replica=" + replica + " from node=" + nthSuccessor);
         }
@@ -201,14 +224,14 @@ public final class ServerLauncher {
      * Transfers replicas to other nodes when leaving
      */
     private static void transferReplicas() throws RemoteException {
-        Node nthSuccessor = RemoteUtil.getNthSuccessor(node, Replication.N);
+        Node nthSuccessor = RemoteUtil.getNthSuccessor(node, node.getNodes(), Replication.N);
         if (node.getId() != nthSuccessor.getId()) {
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(new ArrayList<>(node.getItems().values()));
             logger.debug("Replicated item=" + Arrays.toString(node.getItems().keySet().toArray()) + " to nthSuccessor=" + nthSuccessor);
         }
         for (Item replica : node.getReplicas().values()) {
             Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-            nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
+            nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), Replication.N);
             if (originalNode.getId() != nthSuccessor.getId()) {
                 RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
                 logger.debug("Replicated replica=" + replica + " to nthSuccessor=" + nthSuccessor);
@@ -251,14 +274,5 @@ public final class ServerLauncher {
         } catch (RemoteException e) {
             // already started
         }
-    }
-
-    /**
-     * Tests if the node has been registered
-     *
-     * @return true is node is registered, false otherwise
-     */
-    private static boolean isConnected() {
-        return node != null;
     }
 }
