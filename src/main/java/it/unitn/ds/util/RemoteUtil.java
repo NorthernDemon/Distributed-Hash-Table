@@ -139,7 +139,7 @@ public abstract class RemoteUtil {
     /**
      * Returns successor node clockwise in the ring of the given node id in the set of nodes
      *
-     * @param nodeId predecessor node id
+     * @param nodeId id of the current node
      * @param nodes  set of possible successors
      * @return successor node of the given node id
      */
@@ -164,6 +164,21 @@ public abstract class RemoteUtil {
     }
 
     /**
+     * Returns Nth successor of the given node
+     *
+     * @param nodeId id of the current node
+     * @param count  how many nodes to skip
+     * @param nodes  set of known nodes
+     * @return nth successor node
+     */
+    public static Node getNthSuccessor(int nodeId, Map<Integer, String> nodes, int count) throws RemoteException {
+        for (int i = 0; i < count; i++) {
+            nodeId = getSuccessorNodeId(nodeId, nodes);
+        }
+        return getRemoteNode(nodes, nodeId, NodeServer.class).getNode();
+    }
+
+    /**
      * Returns predecessor node id of the given node
      *
      * @param node successor node
@@ -178,22 +193,5 @@ public abstract class RemoteUtil {
             }
         }
         return reverse.iterator().next();
-    }
-
-    /**
-     * Returns Nth successor of the given node
-     *
-     * @param node  current node
-     * @param count how many nodes to skip
-     * @param nodes set of known nodes
-     * @return successor node
-     * @throws RemoteException in case of RMI exception
-     */
-    public static Node getNthSuccessor(Node node, Map<Integer, String> nodes, int count) throws RemoteException {
-        int nodeId = node.getId();
-        for (int i = 0; i < count; i++) {
-            nodeId = getSuccessorNodeId(nodeId, nodes);
-        }
-        return getRemoteNode(nodes, nodeId, NodeServer.class).getNode();
     }
 }

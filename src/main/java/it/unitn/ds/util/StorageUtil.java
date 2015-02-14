@@ -12,8 +12,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Convenient class to work with Node's internal list of items and maintain CSV file
@@ -47,6 +46,29 @@ public abstract class StorageUtil {
                     item.getVersion() + "\n");
             logger.debug("Storage wrote an item=" + item);
         }
+    }
+
+    /**
+     * Returns all item from CSV file of the provided node in format: {key},{value},{version}
+     *
+     * @param nodeId responsible for item
+     * @return all item from given node
+     */
+    public static List<Item> readAll(int nodeId) {
+        List<Item> items = new ArrayList<>();
+        try {
+            for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
+                Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
+                items.add(new Item(
+                        Integer.parseInt(it.next()),
+                        it.next(),
+                        Integer.parseInt(it.next())));
+            }
+        } catch (Exception e) {
+            logger.error("Failed to read all item for nodeId=" + nodeId, e);
+        }
+        logger.debug("Storage of node=" + nodeId + " read all item=" + Arrays.toString(items.toArray()));
+        return items;
     }
 
     /**
