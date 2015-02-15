@@ -2,6 +2,7 @@ package it.unitn.ds.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Scanner;
@@ -30,7 +31,7 @@ public abstract class InputUtil {
      *
      * @param className of the class to invoke public static methods in
      */
-    public static void readInput(String className) {
+    public static void readInput(@NotNull String className) {
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNext()) {
             String[] commands = scanner.nextLine().split(SEPARATOR);

@@ -6,6 +6,7 @@ import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
@@ -32,7 +33,7 @@ public abstract class StorageUtil {
      *
      * @param node to write
      */
-    public static void write(Node node) {
+    public static void write(@NotNull Node node) {
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
             writeItems(writer, node.getItems().values());
             writeItems(writer, node.getReplicas().values());
@@ -41,7 +42,7 @@ public abstract class StorageUtil {
         }
     }
 
-    private static void writeItems(PrintWriter writer, Collection<Item> items) {
+    private static void writeItems(@NotNull PrintWriter writer, @NotNull Collection<Item> items) {
         for (Item item : items) {
             writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + System.getProperty("line.separator"));
             logger.debug("Storage wrote an item=" + item);
@@ -54,8 +55,9 @@ public abstract class StorageUtil {
      * @param nodeId of the node
      * @return all items and replicas of node's storage
      */
+    @NotNull
     public static List<Item> readAll(int nodeId) {
-        List<Item> items = new ArrayList<>();
+        List<Item> items = new LinkedList<>();
         try {
             for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
                 Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
@@ -122,6 +124,7 @@ public abstract class StorageUtil {
         }
     }
 
+    @NotNull
     private static String getFileName(int nodeId) {
         return STORAGE_FOLDER + "/Node-" + nodeId + ".csv";
     }

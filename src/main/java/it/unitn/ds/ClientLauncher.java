@@ -8,6 +8,7 @@ import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -43,7 +44,7 @@ public final class ClientLauncher {
      * @param coordinatorNodeId of the node, does not have to contain item
      * @param itemKey           of the item
      */
-    public static void get(String coordinatorHost, int coordinatorNodeId, int itemKey) throws RemoteException {
+    public static void get(@NotNull String coordinatorHost, int coordinatorNodeId, int itemKey) throws RemoteException {
         Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
         Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).getItem(itemKey);
         logger.info("Got item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
@@ -57,7 +58,7 @@ public final class ClientLauncher {
      * @param itemKey           of the item
      * @param itemValue         new item value
      */
-    public static void update(String coordinatorHost, int coordinatorNodeId, int itemKey, String itemValue) throws RemoteException {
+    public static void update(@NotNull String coordinatorHost, int coordinatorNodeId, int itemKey, @NotNull String itemValue) throws RemoteException {
         if (itemKey <= 0) {
             logger.warn("Item key must be positive integer [ itemKey > 0 ] !");
             return;
@@ -73,7 +74,7 @@ public final class ClientLauncher {
      * @param coordinatorHost   of the node
      * @param coordinatorNodeId of the node
      */
-    public static void view(String coordinatorHost, int coordinatorNodeId) throws RemoteException {
+    public static void view(@NotNull String coordinatorHost, int coordinatorNodeId) throws RemoteException {
         Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
         Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorNode, NodeServer.class).getNodes();
         for (Map.Entry<Integer, String> entry : nodes.entrySet()) {

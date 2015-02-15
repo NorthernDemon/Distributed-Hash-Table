@@ -1,6 +1,7 @@
 package it.unitn.ds.entity;
 
 import com.google.common.base.MoreObjects;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -21,23 +22,34 @@ public final class Item implements Serializable {
     /**
      * Item value without commas
      */
-    private final String value;
+    @NotNull
+    private String value;
 
     /**
      * Used in replication to determine the latest item, starts from 1 and up
      */
-    private final int version;
+    private int version;
 
-    public Item(int key, String value, int version) {
+    public Item(int key, @NotNull String value, int version) {
         this.key = key;
         this.value = value;
         this.version = version;
+    }
+
+    public Item(int key, @NotNull String value) {
+        this(key, value, 1);
+    }
+
+    public void update(@NotNull String value) {
+        this.value = value;
+        this.version++;
     }
 
     public int getKey() {
         return key;
     }
 
+    @NotNull
     public String getValue() {
         return value;
     }

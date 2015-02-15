@@ -2,6 +2,7 @@ package it.unitn.ds.rmi;
 
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
+import org.jetbrains.annotations.NotNull;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -13,19 +14,21 @@ import java.util.Map;
  */
 public interface NodeServer extends Remote {
 
+    @NotNull
     Node getNode() throws RemoteException;
 
+    @NotNull
     Map<Integer, String> getNodes() throws RemoteException;
 
-    void addNode(int id, String host) throws RemoteException;
+    void addNode(int id, @NotNull String host) throws RemoteException;
 
     void removeNode(int id) throws RemoteException;
 
-    void updateItems(List<Item> items) throws RemoteException;
+    void updateItems(@NotNull List<Item> items) throws RemoteException;
 
-    void removeItems(List<Item> items) throws RemoteException;
+    void removeItems(@NotNull List<Item> items) throws RemoteException;
 
-    void updateReplicas(List<Item> replicas) throws RemoteException;
+    void updateReplicas(@NotNull List<Item> replicas) throws RemoteException;
 
-    void removeReplicas(List<Item> replicas) throws RemoteException;
+    void removeReplicas(@NotNull List<Item> replicas) throws RemoteException;
 }

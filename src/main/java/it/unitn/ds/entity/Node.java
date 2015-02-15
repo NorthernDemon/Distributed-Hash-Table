@@ -1,6 +1,7 @@
 package it.unitn.ds.entity;
 
 import com.google.common.base.MoreObjects;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.*;
@@ -22,6 +23,7 @@ public final class Node implements Serializable {
     /**
      * IP address of the server node
      */
+    @NotNull
     private final String host;
 
     /**
@@ -29,6 +31,7 @@ public final class Node implements Serializable {
      * <p/>
      * Map<ItemKey, Item>
      */
+    @NotNull
     private final Map<Integer, Item> items = new TreeMap<>();
 
     /**
@@ -36,6 +39,7 @@ public final class Node implements Serializable {
      * <p/>
      * Map<ItemKey, Item>
      */
+    @NotNull
     private final Map<Integer, Item> replicas = new TreeMap<>();
 
     /**
@@ -44,6 +48,7 @@ public final class Node implements Serializable {
      * Map<NodeId, Host>
      */
     // TODO should this be a double linked list instead ?
+    @NotNull
     private final Map<Integer, String> nodes = new TreeMap<>();
 
     public Node() {
@@ -51,21 +56,21 @@ public final class Node implements Serializable {
         this.host = "";
     }
 
-    public Node(int id, String host) {
+    public Node(int id, @NotNull String host) {
         this.id = id;
         this.host = host;
         nodes.put(id, host);
     }
 
-    public Node(Node node) {
+    public Node(@NotNull Node node) {
         this(node.id, node.host);
     }
 
-    public void putNodes(Map<Integer, String> nodes) {
+    public void putNodes(@NotNull Map<Integer, String> nodes) {
         this.nodes.putAll(nodes);
     }
 
-    public void putNode(int id, String host) {
+    public void putNode(int id, @NotNull String host) {
         nodes.put(id, host);
     }
 
@@ -73,25 +78,25 @@ public final class Node implements Serializable {
         nodes.remove(id);
     }
 
-    public void putItems(List<Item> items) {
+    public void putItems(@NotNull Collection<Item> items) {
         for (Item item : items) {
             this.items.put(item.getKey(), item);
         }
     }
 
-    public void removeItems(List<Item> items) {
+    public void removeItems(@NotNull Collection<Item> items) {
         for (Item item : items) {
             this.items.remove(item.getKey());
         }
     }
 
-    public void putReplicas(List<Item> replicas) {
+    public void putReplicas(@NotNull Collection<Item> replicas) {
         for (Item replica : replicas) {
             this.replicas.put(replica.getKey(), replica);
         }
     }
 
-    public void removeReplicas(List<Item> replicas) {
+    public void removeReplicas(@NotNull Collection<Item> replicas) {
         for (Item replica : replicas) {
             this.replicas.remove(replica.getKey());
         }
@@ -101,6 +106,7 @@ public final class Node implements Serializable {
         return id;
     }
 
+    @NotNull
     public String getHost() {
         return host;
     }

@@ -1,6 +1,7 @@
 package it.unitn.ds.rmi;
 
 import it.unitn.ds.entity.Item;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.rmi.Remote;
@@ -15,5 +16,5 @@ public interface NodeClient extends Remote {
     Item getItem(int key) throws RemoteException;
 
     @Nullable
-    Item updateItem(int key, String value) throws RemoteException;
+    Item updateItem(int key, @NotNull String value) throws RemoteException;
 }

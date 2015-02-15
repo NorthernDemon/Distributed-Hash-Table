@@ -2,6 +2,7 @@ package it.unitn.ds.rmi;
 
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.rmi.RemoteException;
@@ -15,24 +16,27 @@ import java.util.Map;
  */
 public final class NullNodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
+    @NotNull
     private final Node node;
 
-    public NullNodeRemote(Node node) throws RemoteException {
+    public NullNodeRemote(@NotNull Node node) throws RemoteException {
         this.node = node;
     }
 
+    @NotNull
     @Override
     public Node getNode() throws RemoteException {
         return node;
     }
 
+    @NotNull
     @Override
     public Map<Integer, String> getNodes() throws RemoteException {
         return Collections.emptyMap();
     }
 
     @Override
-    public void addNode(int id, String host) throws RemoteException {
+    public void addNode(int id, @NotNull String host) throws RemoteException {
     }
 
     @Override
@@ -40,19 +44,19 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
     }
 
     @Override
-    public void updateItems(List<Item> items) throws RemoteException {
+    public void updateItems(@NotNull List<Item> items) throws RemoteException {
     }
 
     @Override
-    public void removeItems(List<Item> items) throws RemoteException {
+    public void removeItems(@NotNull List<Item> items) throws RemoteException {
     }
 
     @Override
-    public void updateReplicas(List<Item> replicas) throws RemoteException {
+    public void updateReplicas(@NotNull List<Item> replicas) throws RemoteException {
     }
 
     @Override
-    public void removeReplicas(List<Item> replicas) throws RemoteException {
+    public void removeReplicas(@NotNull List<Item> replicas) throws RemoteException {
     }
 
     @Nullable
@@ -63,7 +67,7 @@ public final class NullNodeRemote extends UnicastRemoteObject implements NodeSer
 
     @Nullable
     @Override
-    public Item updateItem(int key, String value) throws RemoteException {
+    public Item updateItem(int key, @NotNull String value) throws RemoteException {
         return null;
     }
 }
