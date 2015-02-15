@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Interface to be used by SERVER
+ * Interface to be used by SERVER for accessing the remote node via RMI
  */
 public interface NodeServer extends Remote {
 

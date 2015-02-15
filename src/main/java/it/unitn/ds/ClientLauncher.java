@@ -1,6 +1,7 @@
 package it.unitn.ds;
 
 import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeClient;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
@@ -11,6 +12,11 @@ import org.apache.logging.log4j.Logger;
 import java.rmi.RemoteException;
 import java.util.Map;
 
+/**
+ * Simulates client of the server node's ring
+ *
+ * @see it.unitn.ds.ServerLauncher
+ */
 public final class ClientLauncher {
 
     private static final Logger logger = LogManager.getLogger();
@@ -31,41 +37,48 @@ public final class ClientLauncher {
     }
 
     /**
-     * Get item given node id and item itemKey
+     * Get item from the node in the ring
      *
-     * @param coordinatorHost   of the known node
-     * @param coordinatorNodeId of the known node, does not have to contain item itemKey
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node, does not have to contain item
      * @param itemKey           of the item
      */
     public static void get(String coordinatorHost, int coordinatorNodeId, int itemKey) throws RemoteException {
-        Item item = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeClient.class).getItem(itemKey);
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).getItem(itemKey);
         logger.info("Got item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
-     * Update item given node id and item itemKey
+     * Creates/Update item of the node in the ring
      *
-     * @param coordinatorHost   of the known node
-     * @param coordinatorNodeId of the known node, does not have to contain item itemKey
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node, does not have to contain item
      * @param itemKey           of the item
-     * @param itemValue         new item itemValue
+     * @param itemValue         new item value
      */
     public static void update(String coordinatorHost, int coordinatorNodeId, int itemKey, String itemValue) throws RemoteException {
-        Item item = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeClient.class).updateItem(itemKey, itemValue);
+        if (itemKey <= 0) {
+            logger.warn("Item key must be positive integer [ itemKey > 0 ] !");
+            return;
+        }
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).updateItem(itemKey, itemValue);
         logger.info("Updated item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
-     * View ring topology from the given node id
+     * View ring topology from the node in the ring
      *
-     * @param coordinatorHost   of the known node
-     * @param coordinatorNodeId of the known node
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node
      */
     public static void view(String coordinatorHost, int coordinatorNodeId) throws RemoteException {
-        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorHost, coordinatorNodeId, NodeServer.class).getNodes();
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorNode, NodeServer.class).getNodes();
         for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
-            NodeServer nodeServer = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey(), NodeServer.class);
-            logger.debug("Node=" + nodeServer.getNode());
+            Node node = new Node(entry.getKey(), entry.getValue());
+            logger.debug("Node=" + RemoteUtil.getRemoteNode(node, NodeServer.class).getNode());
         }
         logger.info("Viewed topology from coordinatorNodeId=" + coordinatorNodeId);
     }

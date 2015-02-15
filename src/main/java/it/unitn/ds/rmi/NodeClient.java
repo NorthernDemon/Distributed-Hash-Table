@@ -7,7 +7,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 /**
- * Interface to be used by CLIENT
+ * Interface to be used by CLIENT for accessing the remote node via RMI
  */
 public interface NodeClient extends Remote {
 

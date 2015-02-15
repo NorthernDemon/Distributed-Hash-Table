@@ -2,6 +2,8 @@ package it.unitn.ds;
 
 /**
  * Represents different states the node can be in
+ *
+ * @see it.unitn.ds.entity.Node
  */
 public enum NodeState {
 

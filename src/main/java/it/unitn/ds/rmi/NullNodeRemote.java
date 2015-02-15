@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Used to simulate crashed node or in case of network errors
+ */
 public final class NullNodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
     private final Node node;

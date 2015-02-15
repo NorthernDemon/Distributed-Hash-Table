@@ -21,6 +21,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Simulates server node in the ring
+ *
+ * @see it.unitn.ds.ClientLauncher
+ */
 public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
@@ -43,6 +48,10 @@ public final class ServerLauncher {
      * Example: leave
      */
     public static void main(String[] args) {
+        if (Replication.W + Replication.R <= Replication.N) {
+            logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
+            return;
+        }
         logger.info("Server Node is ready for request >>");
         logger.info("Example: method name,node host,node id,existing node host, existing node id");
         logger.info("Example: join,localhost,10,localhost,0");
@@ -81,7 +90,7 @@ public final class ServerLauncher {
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
+            NodeServer existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class);
             Map<Integer, String> existingNodes = existingNode.getNodes();
             if (existingNodes.containsKey(nodeId)) {
                 logger.error("Cannot join as nodeId=" + nodeId + " already taken!");
@@ -111,7 +120,7 @@ public final class ServerLauncher {
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
         transferReplicas();
-        Node successorNode = RemoteUtil.getSuccessorNode(node);
+        Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), node.getNodes());
         if (successorNode != null) {
             List<Item> items = new ArrayList<>(node.getItems().values());
             if (!items.isEmpty()) {
@@ -160,7 +169,7 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is recovering...");
-        NodeServer existingNode = RemoteUtil.getRemoteNode(existingNodeHost, existingNodeId, NodeServer.class);
+        NodeServer existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class);
         Map<Integer, String> existingNodes = existingNode.getNodes();
         Node successorNode = RemoteUtil.getSuccessorNode(node.getId(), existingNodes);
         if (successorNode == null) {
@@ -182,9 +191,9 @@ public final class ServerLauncher {
             RemoteUtil.getRemoteNode(nodeForItem, NodeServer.class).updateItems(Arrays.asList(latestItem));
             logger.debug("Recovered storage latestItem=" + latestItem + " to nodeForItem=" + nodeForItem);
             for (int i = 1; i < Replication.N; i++) {
-                Node crashedNthSuccessor = RemoteUtil.getNthSuccessor(node.getId(), node.getNodes(), i);
+                Node crashedNthSuccessor = RemoteUtil.getNthSuccessor(node, i);
                 RemoteUtil.getRemoteNode(crashedNthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(latestItem));
-                Node originalNthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem.getId(), node.getNodes(), i);
+                Node originalNthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, i);
                 RemoteUtil.getRemoteNode(originalNthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(latestItem));
             }
         }
@@ -197,9 +206,9 @@ public final class ServerLauncher {
                 RemoteUtil.getRemoteNode(nodeForItem, NodeServer.class).updateItems(Arrays.asList(item));
                 logger.debug("Recovered replica item=" + item + " to nodeForItem=" + nodeForItem);
                 for (int i = 1; i < Replication.N; i++) {
-                    Node crashedNthSuccessor = RemoteUtil.getNthSuccessor(node.getId(), node.getNodes(), i);
+                    Node crashedNthSuccessor = RemoteUtil.getNthSuccessor(node, i);
                     RemoteUtil.getRemoteNode(crashedNthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(item));
-                    Node originalNthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem.getId(), node.getNodes(), i);
+                    Node originalNthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, i);
                     RemoteUtil.getRemoteNode(originalNthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(item));
                 }
             }
@@ -214,7 +223,7 @@ public final class ServerLauncher {
     private static Node register(String host, int id) throws Exception {
         System.setProperty("java.rmi.server.hostname", host);
         Node node = new Node(id, host);
-        Naming.bind(RemoteUtil.getNodeRMI(host, id), new NodeRemote(node));
+        Naming.bind(RemoteUtil.getNodeRMI(node), new NodeRemote(node));
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 logger.info("Auto-leaving process initiated...");
@@ -237,9 +246,9 @@ public final class ServerLauncher {
      */
     private static void replicateItems(Node successorNode) throws RemoteException {
         if (!successorNode.getItems().isEmpty()) {
-            List<Item> items = getNodeItems(successorNode);
+            List<Item> items = RemoteUtil.getNodeItems(node, successorNode);
             RemoteUtil.getRemoteNode(node, NodeServer.class).updateItems(items);
-            RemoteUtil.getRemoteNode(RemoteUtil.getNthSuccessor(node.getId(), node.getNodes(), Replication.N), NodeServer.class).removeReplicas(items);
+            RemoteUtil.getRemoteNode(RemoteUtil.getNthSuccessor(node, Replication.N), NodeServer.class).removeReplicas(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).removeItems(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).updateReplicas(items);
             logger.debug("Transferred items=" + Arrays.toString(items.toArray()) + " from successorNode=" + successorNode);
@@ -248,7 +257,7 @@ public final class ServerLauncher {
         RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(replicas);
         for (Item replica : replicas) {
             Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), successorNode.getNodes());
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode.getId(), node.getNodes(), Replication.N);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
             logger.debug("Removed replica=" + replica + " from node=" + nthSuccessor);
         }
@@ -260,39 +269,17 @@ public final class ServerLauncher {
     }
 
     /**
-     * Returns a list of items, that the given node is responsible for
-     *
-     * @param successorNode from which to find
-     * @return list of items
-     */
-    private static List<Item> getNodeItems(Node successorNode) {
-        int predecessorNodeId = RemoteUtil.getPredecessorNodeId(node);
-        boolean isZeroCrossed = node.getId() < predecessorNodeId;
-        List<Item> items = new ArrayList<>();
-        for (Item item : successorNode.getItems().values()) {
-            // check if item (e.g. 5) falls in range of highest-identified node (e.g. 20) or lowest (e.g. 5)
-            if (isZeroCrossed && (item.getKey() <= node.getId() || item.getKey() > successorNode.getId())) {
-                items.add(item);
-            }
-            if (!isZeroCrossed && item.getKey() <= node.getId() && item.getKey() > predecessorNodeId) {
-                items.add(item);
-            }
-        }
-        return items;
-    }
-
-    /**
      * Transfers replicas to other nodes when leaving
      */
     private static void transferReplicas() throws RemoteException {
-        Node nthSuccessor = RemoteUtil.getNthSuccessor(node.getId(), node.getNodes(), Replication.N);
+        Node nthSuccessor = RemoteUtil.getNthSuccessor(node, Replication.N);
         if (node.getId() != nthSuccessor.getId()) {
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(new ArrayList<>(node.getItems().values()));
             logger.debug("Replicated item=" + Arrays.toString(node.getItems().keySet().toArray()) + " to nthSuccessor=" + nthSuccessor);
         }
         for (Item replica : node.getReplicas().values()) {
             Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-            nthSuccessor = RemoteUtil.getNthSuccessor(originalNode.getId(), node.getNodes(), Replication.N);
+            nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
             if (originalNode.getId() != nthSuccessor.getId()) {
                 RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
                 logger.debug("Replicated replica=" + replica + " to nthSuccessor=" + nthSuccessor);
@@ -301,27 +288,27 @@ public final class ServerLauncher {
     }
 
     /**
-     * Announce JOIN operation to the set of known nodes
+     * Announce JOIN operation to the nodes in the ring
      */
     private static void announceJoin() throws RemoteException {
         logger.debug("Announcing join to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
-        for (int nodeId : node.getNodes().keySet()) {
-            if (nodeId != node.getId()) {
-                RemoteUtil.getRemoteNode(node.getNodes(), nodeId, NodeServer.class).addNode(node.getId(), node.getHost());
-                logger.debug("Announced join to nodeId=" + nodeId);
+        for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
+            if (entry.getKey() != node.getId()) {
+                RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).addNode(node.getId(), node.getHost());
+                logger.debug("Announced join to nodeId=" + entry.getKey());
             }
         }
     }
 
     /**
-     * Announce LEAVE operation to the set of known nodes
+     * Announce LEAVE operation to the nodes in the ring
      */
     private static void announceLeave() throws RemoteException {
         logger.debug("Announcing leave to nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
-        for (int nodeId : node.getNodes().keySet()) {
-            if (nodeId != node.getId()) {
-                RemoteUtil.getRemoteNode(node.getNodes(), nodeId, NodeServer.class).removeNode(node.getId());
-                logger.debug("Announced leave to nodeId=" + nodeId);
+        for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
+            if (entry.getKey() != node.getId()) {
+                RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).removeNode(node.getId());
+                logger.debug("Announced leave to nodeId=" + entry.getKey());
             }
         }
     }

@@ -6,18 +6,26 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Node is placed in the ring based on its id (might be the same as item key)
- * Nodes store items, knows all the other nodes in the ring and can communicate
- * Responsible node has id >= item key
+ * Nodes are put in the ring in acceding order (with the most greatest id followed by the most lowest id, forming a ring)
+ * Nodes store items, such that (NodeId >= itemKey) and replicas of N predecessor's node items
+ *
+ * @see it.unitn.ds.entity.Item
+ * @see it.unitn.ds.Replication
  */
 public final class Node implements Serializable {
 
+    /**
+     * Positive integer to determine position in the ring
+     */
     private final int id;
 
+    /**
+     * IP address of the server node
+     */
     private final String host;
 
     /**
-     * Own items, for which the node is responsible
+     * Own items, for which the node is responsible for
      * <p/>
      * Map<ItemKey, Item>
      */
@@ -53,56 +61,40 @@ public final class Node implements Serializable {
         this(node.id, node.host);
     }
 
-    public void putNodes(Map<Integer, String> existingNodes) {
-        nodes.putAll(existingNodes);
+    public void putNodes(Map<Integer, String> nodes) {
+        this.nodes.putAll(nodes);
     }
 
-    public void putNode(int nodeId, String host) {
-        nodes.put(nodeId, host);
+    public void putNode(int id, String host) {
+        nodes.put(id, host);
     }
 
-    public void removeNode(int nodeId) {
-        nodes.remove(nodeId);
+    public void removeNode(int id) {
+        nodes.remove(id);
     }
 
     public void putItems(List<Item> items) {
         for (Item item : items) {
-            putItem(item);
+            this.items.put(item.getKey(), item);
         }
-    }
-
-    public void putItem(Item item) {
-        items.put(item.getKey(), item);
     }
 
     public void removeItems(List<Item> items) {
         for (Item item : items) {
-            removeItem(item.getKey());
+            this.items.remove(item.getKey());
         }
     }
 
-    public void removeItem(int key) {
-        items.remove(key);
-    }
-
-    public void putReplicas(List<Item> items) {
-        for (Item item : items) {
-            putReplica(item);
+    public void putReplicas(List<Item> replicas) {
+        for (Item replica : replicas) {
+            this.replicas.put(replica.getKey(), replica);
         }
     }
 
-    public void putReplica(Item item) {
-        replicas.put(item.getKey(), item);
-    }
-
-    public void removeReplicas(List<Item> items) {
-        for (Item item : items) {
-            removeReplica(item.getKey());
+    public void removeReplicas(List<Item> replicas) {
+        for (Item replica : replicas) {
+            this.replicas.remove(replica.getKey());
         }
-    }
-
-    public void removeReplica(int key) {
-        replicas.remove(key);
     }
 
     public int getId() {

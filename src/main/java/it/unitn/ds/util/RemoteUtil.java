@@ -1,5 +1,6 @@
 package it.unitn.ds.util;
 
+import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.rmi.NullNodeRemote;
@@ -22,100 +23,60 @@ public abstract class RemoteUtil {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Get reference to remote node given the set of known nodes and node id
+     * Get reference to remote node
      *
-     * @param nodes set of known nodes
-     * @param id    node id
+     * @param node  remote node
      * @param clazz type of the interface
      * @return reference to remote object
-     */
-    public static <T> T getRemoteNode(Map<Integer, String> nodes, int id, Class<T> clazz) {
-        return getRemoteNode(nodes.get(id), id, clazz);
-    }
-
-    /**
-     * Get reference to remote node given the node itself
-     *
-     * @param node  current node
-     * @param clazz type of the interface
-     * @return reference to remote object
+     * @see it.unitn.ds.rmi.NodeClient
+     * @see it.unitn.ds.rmi.NodeServer
      */
     public static <T> T getRemoteNode(Node node, Class<T> clazz) {
-        if (node == null) {
-            return getNullNodeRemote(clazz);
-        }
-        return getRemoteNode(node.getHost(), node.getId(), clazz);
-    }
-
-    /**
-     * Get reference to remote node given teh node id and node host
-     *
-     * @param host  network host
-     * @param id    of the wanted node
-     * @param clazz type of the interface
-     * @return reference to remote object
-     */
-    public static <T> T getRemoteNode(String host, int id, Class<T> clazz) {
         try {
-            return clazz.cast(Naming.lookup(getNodeRMI(host, id)));
+            return clazz.cast(Naming.lookup(getNodeRMI(node)));
         } catch (Exception e) {
-            logger.error("Failed to get Remote Interface for id=" + id, e);
-            return getNullNodeRemote(clazz);
+            logger.error("Failed to get Remote Interface for id=" + node.getId(), e);
+            try {
+                return clazz.cast(new NullNodeRemote(new Node()));
+            } catch (RemoteException re) {
+                logger.error("Failed to get Null Node Pattern", re);
+                return null;
+            }
         }
     }
 
     /**
-     * Returns RMI string of the node for given node
+     * Returns RMI string of the remote node
      *
-     * @param node the current node
+     * @param node remote node
      * @return default lookup string
      */
     public static String getNodeRMI(Node node) {
-        return getNodeRMI(node.getHost(), node.getId());
+        return "rmi://" + node.getHost() + "/NodeRemote" + node.getId();
     }
 
     /**
-     * Returns RMI string of the node for given host and id
+     * Get node, responsible for item key
      *
-     * @param host network host
-     * @param id   id of the current node
-     * @return default lookup string
+     * @param itemKey of the item
+     * @param nodes   set of nodes
+     * @return responsible node
      */
-    public static String getNodeRMI(String host, int id) {
-        return "rmi://" + host + "/NodeRemote" + id;
-    }
-
-    @Nullable
-    private static <T> T getNullNodeRemote(Class<T> clazz) {
-        try {
-            return clazz.cast(new NullNodeRemote(new Node()));
-        } catch (RemoteException re) {
-            logger.error("Failed to get Null Node Pattern", re);
-            return null;
-        }
+    public static Node getNodeForItem(int itemKey, Map<Integer, String> nodes) throws RemoteException {
+        int nodeIdForItem = getNodeIdForItem(itemKey, nodes);
+        return getRemoteNode(new Node(nodeIdForItem, nodes.get(nodeIdForItem)), NodeServer.class).getNode();
     }
 
     /**
-     * Get node for given item key in the set of nodes
+     * Get node id, responsible for item key
      *
-     * @param key   of the item
-     * @param nodes set of known nodes
-     * @return node, responsible for given item
+     * @param itemKey of the item
+     * @param nodes   set of nodes
+     * @return responsible node id
      */
-    public static Node getNodeForItem(int key, Map<Integer, String> nodes) throws RemoteException {
-        return getRemoteNode(nodes, getNodeIdForItem(key, nodes), NodeServer.class).getNode();
-    }
-
-    /**
-     * Get node id for given item key in the set of nodes
-     *
-     * @param key   of the item
-     * @param nodes set of known nodes
-     * @return node id
-     */
-    private static int getNodeIdForItem(int key, Map<Integer, String> nodes) {
+    private static int getNodeIdForItem(int itemKey, Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
-            if (nodeId >= key) {
+            if (nodeId >= itemKey) {
                 return nodeId;
             }
         }
@@ -123,25 +84,11 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Returns successor node clockwise in the ring of the given current node
+     * Returns clockwise successor node in the ring
      *
-     * @param node current node
-     * @return successor node of the given node id
-     */
-    @Nullable
-    public static Node getSuccessorNode(Node node) throws RemoteException {
-        if (node == null) {
-            return null;
-        }
-        return getSuccessorNode(node.getId(), node.getNodes());
-    }
-
-    /**
-     * Returns successor node clockwise in the ring of the given node id in the set of nodes
-     *
-     * @param nodeId id of the current node
-     * @param nodes  set of possible successors
-     * @return successor node of the given node id
+     * @param nodeId of the current node
+     * @param nodes  set of nodes
+     * @return clockwise successor node
      */
     @Nullable
     public static Node getSuccessorNode(int nodeId, Map<Integer, String> nodes) throws RemoteException {
@@ -151,7 +98,22 @@ public abstract class RemoteUtil {
             return null;
         }
         logger.debug("NodeId=" + nodeId + " found successorNodeId=" + successorNodeId);
-        return getRemoteNode(nodes, successorNodeId, NodeServer.class).getNode();
+        return getRemoteNode(new Node(successorNodeId, nodes.get(successorNodeId)), NodeServer.class).getNode();
+    }
+
+    /**
+     * Returns Nth successor
+     *
+     * @param node  current node
+     * @param count how many nodes to skip
+     * @return nth successor node
+     */
+    public static Node getNthSuccessor(Node node, int count) throws RemoteException {
+        int nodeId = node.getId();
+        for (int i = 0; i < count; i++) {
+            nodeId = getSuccessorNodeId(nodeId, node.getNodes());
+        }
+        return getRemoteNode(new Node(nodeId, node.getNodes().get(nodeId)), NodeServer.class).getNode();
     }
 
     private static int getSuccessorNodeId(int targetNodeId, Map<Integer, String> nodes) {
@@ -164,27 +126,35 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Returns Nth successor of the given node
+     * Returns a list of items, that the node is responsible for
      *
-     * @param nodeId id of the current node
-     * @param count  how many nodes to skip
-     * @param nodes  set of known nodes
-     * @return nth successor node
+     * @param node          current node
+     * @param successorNode of the current node
+     * @return list of items, responsible of
      */
-    public static Node getNthSuccessor(int nodeId, Map<Integer, String> nodes, int count) throws RemoteException {
-        for (int i = 0; i < count; i++) {
-            nodeId = getSuccessorNodeId(nodeId, nodes);
+    public static List<Item> getNodeItems(Node node, Node successorNode) {
+        int predecessorNodeId = RemoteUtil.getPredecessorNodeId(node);
+        boolean isZeroCrossed = node.getId() < predecessorNodeId;
+        List<Item> items = new ArrayList<>();
+        for (Item item : successorNode.getItems().values()) {
+            // check if item (e.g. 5) falls in range of highest-identified node (e.g. 20) or lowest (e.g. 5)
+            if (isZeroCrossed && (item.getKey() <= node.getId() || item.getKey() > successorNode.getId())) {
+                items.add(item);
+            }
+            if (!isZeroCrossed && item.getKey() <= node.getId() && item.getKey() > predecessorNodeId) {
+                items.add(item);
+            }
         }
-        return getRemoteNode(nodes, nodeId, NodeServer.class).getNode();
+        return items;
     }
 
     /**
-     * Returns predecessor node id of the given node
+     * Returns predecessor node id
      *
-     * @param node successor node
+     * @param node current node
      * @return predecessor node
      */
-    public static int getPredecessorNodeId(Node node) {
+    private static int getPredecessorNodeId(Node node) {
         List<Integer> reverse = new ArrayList<>(node.getNodes().keySet());
         Collections.reverse(reverse);
         for (int nodeId : reverse) {

@@ -13,6 +13,9 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
+/**
+ * Provides an access to remote node via RMI
+ */
 public final class NodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
     private static final Logger logger = LogManager.getLogger();
@@ -108,7 +111,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
             logger.debug("Got original item=" + item + " from originalNode=" + originalNode);
         }
         for (int i = 1; i < Replication.N; i++) {
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode.getId(), node.getNodes(), i);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, i);
             if (items.size() != Replication.R) {
                 item = nthSuccessor.getReplicas().get(itemKey);
                 if (item != null) {
@@ -134,7 +137,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         RemoteUtil.getRemoteNode(originalNode, NodeServer.class).updateItems(Arrays.asList(item));
         logger.debug("Replicated original item=" + item + " to originalNode=" + originalNode);
         for (int i = 1; i < Replication.N; i++) {
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode.getId(), node.getNodes(), i);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, i);
             if (nthSuccessor != null && nthSuccessor.getId() != originalNode.getId()) {
                 RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(item));
                 logger.debug("Replicated item=" + item + " to nthSuccessor=" + nthSuccessor);

@@ -15,7 +15,9 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Convenient class to work with Node's internal list of items and maintain CSV file
+ * Convenient class to work with Node's internal list of items
+ * <p/>
+ * Maintains CSV file (under STORAGE_FOLDER directory) in format: {key},{value},{version}
  */
 public abstract class StorageUtil {
 
@@ -26,80 +28,72 @@ public abstract class StorageUtil {
     private static final String STORAGE_FOLDER = "storage";
 
     /**
-     * Creates/Updates list of new items into CSV file in format: {key},{value},{version}
+     * Creates/Updates list of nodes items and replicas into CSV file
      *
-     * @param node responsible for item
+     * @param node to write
      */
     public static void write(Node node) {
         try (PrintWriter writer = new PrintWriter(getFileName(node.getId()), "UTF-8")) {
             writeItems(writer, node.getItems().values());
             writeItems(writer, node.getReplicas().values());
         } catch (Exception e) {
-            logger.error("Failed to write items of the node=" + node, e);
+            logger.error("Failed to write items from node=" + node, e);
         }
     }
 
     private static void writeItems(PrintWriter writer, Collection<Item> items) {
         for (Item item : items) {
-            writer.write(item.getKey() + SEPARATOR +
-                    item.getValue() + SEPARATOR +
-                    item.getVersion() + "\n");
+            writer.write(item.getKey() + SEPARATOR + item.getValue() + SEPARATOR + item.getVersion() + System.getProperty("line.separator"));
             logger.debug("Storage wrote an item=" + item);
         }
     }
 
     /**
-     * Returns all item from CSV file of the provided node in format: {key},{value},{version}
+     * Returns all items and replicas from node's CSV file
      *
-     * @param nodeId responsible for item
-     * @return all item from given node
+     * @param nodeId of the node
+     * @return all items and replicas of node's storage
      */
     public static List<Item> readAll(int nodeId) {
         List<Item> items = new ArrayList<>();
         try {
             for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
                 Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
-                items.add(new Item(
-                        Integer.parseInt(it.next()),
-                        it.next(),
-                        Integer.parseInt(it.next())));
+                items.add(new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next())));
             }
         } catch (Exception e) {
-            logger.error("Failed to read all item for nodeId=" + nodeId, e);
+            logger.error("Failed to read items from nodeId=" + nodeId, e);
         }
         logger.debug("Storage of node=" + nodeId + " read all item=" + Arrays.toString(items.toArray()));
         return items;
     }
 
     /**
-     * Returns an item by key from CSV file of the provided node in format: {key},{value},{version}
+     * Returns an item from node's CSV file
      *
-     * @param nodeId responsible for item
-     * @param key    of the item
-     * @return an item fetched by key from given node
+     * @param nodeId  of the node
+     * @param itemKey of the item
+     * @return an item from node's CSV file
      */
     @Nullable
-    public static Item read(int nodeId, int key) {
+    public static Item read(int nodeId, int itemKey) {
         try {
             for (String line : Files.readAllLines(Paths.get((getFileName(nodeId))), Charsets.UTF_8)) {
-                if (line.startsWith(key + SEPARATOR)) {
+                if (line.startsWith(itemKey + SEPARATOR)) {
                     Iterator<String> it = Splitter.on(SEPARATOR).split(line).iterator();
-                    Item item = new Item(
-                            Integer.parseInt(it.next()),
-                            it.next(),
-                            Integer.parseInt(it.next()));
+                    Item item = new Item(Integer.parseInt(it.next()), it.next(), Integer.parseInt(it.next()));
                     logger.debug("Storage of node=" + nodeId + " read an item=" + item);
                     return item;
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to read item with key=" + key + " for nodeId=" + nodeId, e);
+            logger.error("Failed to read item with itemKey=" + itemKey + " from nodeId=" + nodeId, e);
         }
         return null;
     }
 
     /**
-     * Creates storage folder
+     * Creates storage folder to keep node's CSV files in
      */
     public static void init() {
         try {
@@ -113,9 +107,9 @@ public abstract class StorageUtil {
     }
 
     /**
-     * Removes file storage of the given node
+     * Removes node's CSV file
      *
-     * @param nodeId id of the node to remove its CSV file
+     * @param nodeId of the node
      */
     public static void removeFile(int nodeId) {
         try {

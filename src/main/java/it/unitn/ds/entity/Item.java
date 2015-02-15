@@ -6,18 +6,26 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Item stored in the ring based on its key, falls into area of nodes
- * Version is used in replication, starts from 1 and up
- * Clients can get/update item given it's key and at least one node
- * Coordinator does not have to store the item himself
- * Responsible node has id >= item key
+ * Items are put in the ring under the responsible node (NodeId >= itemKey) and replicated to N successors
+ *
+ * @see it.unitn.ds.entity.Node
+ * @see it.unitn.ds.Replication
  */
 public final class Item implements Serializable {
 
+    /**
+     * Positive integer to determine responsible node in the ring
+     */
     private final int key;
 
+    /**
+     * Item value without commas
+     */
     private final String value;
 
+    /**
+     * Used in replication to determine the latest item, starts from 1 and up
+     */
     private final int version;
 
     public Item(int key, String value, int version) {
