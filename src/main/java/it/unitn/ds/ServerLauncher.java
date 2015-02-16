@@ -45,6 +45,7 @@ public final class ServerLauncher {
      * Example: join,localhost,15,localhost,10
      * Example: join,localhost,20,localhost,15
      * Example: join,localhost,25,localhost,20
+     * Example: join,localhost,20,localhost,25
      * Example: crash
      * Example: recover,localhost,20
      * Example: leave
@@ -60,6 +61,7 @@ public final class ServerLauncher {
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
         logger.info("Example: join,localhost,25,localhost,20");
+        logger.info("Example: join,localhost,30,localhost,25");
         logger.info("Example: crash");
         logger.info("Example: recover,localhost,20");
         logger.info("Example: leave");

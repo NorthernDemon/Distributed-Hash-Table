@@ -24,14 +24,22 @@ public final class ClientLauncher {
 
     /**
      * Description: method name,node host,node id,item key,item value
+     * Example: update,localhost,10,8,New Value Item
      * Example: update,localhost,10,12,New Value Item
+     * Example: update,localhost,10,17,New Value Item
+     * Example: update,localhost,10,22,New Value Item
+     * Example: update,localhost,10,26,New Value Item
      * Example: get,localhost,10,12
      * Example: view,localhost,10
      */
     public static void main(String args[]) {
         logger.info("Client is ready for request >>");
         logger.info("Example: method name,node host,node id,item key,item value");
+        logger.info("Example: update,localhost,10,8,New Value Item");
         logger.info("Example: update,localhost,10,12,New Value Item");
+        logger.info("Example: update,localhost,10,17,New Value Item");
+        logger.info("Example: update,localhost,10,22,New Value Item");
+        logger.info("Example: update,localhost,10,26,New Value Item");
         logger.info("Example: get,localhost,10,12");
         logger.info("Example: view,localhost,10");
         InputUtil.readInput(ClientLauncher.class.getName());
