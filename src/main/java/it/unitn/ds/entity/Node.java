@@ -80,7 +80,9 @@ public final class Node implements Serializable {
 
     public void putItems(@NotNull Collection<Item> items) {
         for (Item item : items) {
-            this.items.put(item.getKey(), item);
+            if (!replicas.containsKey(item.getKey())) {
+                this.items.put(item.getKey(), item);
+            }
         }
     }
 
@@ -92,7 +94,9 @@ public final class Node implements Serializable {
 
     public void putReplicas(@NotNull Collection<Item> replicas) {
         for (Item replica : replicas) {
-            this.replicas.put(replica.getKey(), replica);
+            if (!items.containsKey(replica.getKey())) {
+                this.replicas.put(replica.getKey(), replica);
+            }
         }
     }
 
