@@ -115,12 +115,25 @@ public abstract class RemoteUtil {
      */
     @NotNull
     public static Node getNthSuccessor(@NotNull Node node, int count) throws RemoteException {
+        return getNthSuccessor(node, node.getNodes(), count);
+    }
+
+    /**
+     * Returns Nth successor
+     *
+     * @param node  current node
+     * @param nodes set of nodes
+     * @param count how many nodes to skip
+     * @return nth successor node
+     */
+    @NotNull
+    public static Node getNthSuccessor(@NotNull Node node, @NotNull Map<Integer, String> nodes, int count) throws RemoteException {
         int nodeId = node.getId();
         for (int i = 0; i < count; i++) {
-            nodeId = getSuccessorNodeId(nodeId, node.getNodes());
+            nodeId = getSuccessorNodeId(nodeId, nodes);
         }
         logger.debug("NodeId=" + node.getId() + " found nthSuccessor=" + nodeId);
-        return getRemoteNode(new Node(nodeId, node.getNodes().get(nodeId)), NodeServer.class).getNode();
+        return getRemoteNode(new Node(nodeId, nodes.get(nodeId)), NodeServer.class).getNode();
     }
 
     /**

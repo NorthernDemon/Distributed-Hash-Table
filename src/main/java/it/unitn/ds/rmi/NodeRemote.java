@@ -117,7 +117,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         }
         for (int i = 1; i < Replication.N; i++) {
             if (replicas.size() != Replication.R) {
-                Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, i);
+                Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), i);
                 Item replica = nthSuccessor.getReplicas().get(itemKey);
                 if (replica != null) {
                     replicas.add(replica);
@@ -142,7 +142,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         RemoteUtil.getRemoteNode(originalNode, NodeServer.class).updateItems(Arrays.asList(item));
         logger.debug("Updated item=" + item + " to originalNode=" + originalNode);
         for (int i = 1; i < Replication.N; i++) {
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, i);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, node.getNodes(), i);
             if (nthSuccessor.getId() != originalNode.getId()) {
                 RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(item));
                 logger.debug("Replicated item=" + item + " to nthSuccessor=" + nthSuccessor);
