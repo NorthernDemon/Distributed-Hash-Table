@@ -1,7 +1,4 @@
-*.txt
 *.csv
-*.class
 *.idea
 *.iml
-*.jar
 target

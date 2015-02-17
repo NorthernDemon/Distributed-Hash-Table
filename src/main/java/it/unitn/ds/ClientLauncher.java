@@ -1,103 +1,94 @@
 package it.unitn.ds;
 
-import it.unitn.ds.server.Item;
-import it.unitn.ds.server.NodeRemote;
+import it.unitn.ds.entity.Item;
+import it.unitn.ds.entity.Node;
+import it.unitn.ds.rmi.NodeClient;
+import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.RemoteUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
+import java.rmi.RemoteException;
 import java.util.Map;
 
+/**
+ * Simulates client of the server node's ring
+ *
+ * @see it.unitn.ds.ServerLauncher
+ */
 public final class ClientLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * ./client.jar {methodName},{host},{Node ID},{key},{value}
-     * <p/>
+     * Description: method name,node host,node id,item key,item value
+     * Example: update,localhost,10,8,New Value Item
+     * Example: update,localhost,10,12,New Value Item
+     * Example: update,localhost,10,17,New Value Item
+     * Example: update,localhost,10,22,New Value Item
+     * Example: update,localhost,10,26,New Value Item
      * Example: get,localhost,10,12
-     * Example: update,localhost,15,12,New Value Item
      * Example: view,localhost,10
-     *
-     * @param args
      */
     public static void main(String args[]) {
-        logger.info("Client is ready for request>>");
-        logger.info("Example: {methodName},{host},{Node ID},{key},{value}");
+        logger.info("Client is ready for request >>");
+        logger.info("Example: method name,node host,node id,item key,item value");
+        logger.info("Example: update,localhost,10,8,New Value Item");
+        logger.info("Example: update,localhost,10,12,New Value Item");
+        logger.info("Example: update,localhost,10,17,New Value Item");
+        logger.info("Example: update,localhost,10,22,New Value Item");
+        logger.info("Example: update,localhost,10,26,New Value Item");
         logger.info("Example: get,localhost,10,12");
-        logger.info("Example: update,localhost,15,12,New Value Item");
         logger.info("Example: view,localhost,10");
         InputUtil.readInput(ClientLauncher.class.getName());
     }
 
     /**
-     * Get item given node id and item key
+     * Get item from the node in the ring
      *
-     * @param nodeId of the known node, does not have to contain item key
-     * @param key    of the item
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node, does not have to contain item
+     * @param itemKey           of the item
      */
-    public static void get(String host, int nodeId, int key) {
-        try {
-            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
-            if (node == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return;
-            }
-            Item item = node.getItem(key);
-            logger.info("Got item=" + item + " from nodeId=" + nodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
-        }
+    public static void get(@NotNull String coordinatorHost, int coordinatorNodeId, int itemKey) throws RemoteException {
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).getItem(itemKey);
+        logger.info("Got item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
-     * Update item given node id and item key
+     * Creates/Update item of the node in the ring
      *
-     * @param nodeId of the known node, does not have to contain item key
-     * @param key    of the item
-     * @param value  new item value
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node, does not have to contain item
+     * @param itemKey           of the item
+     * @param itemValue         new item value
      */
-    public static void update(String host, int nodeId, int key, String value) {
-        try {
-            NodeRemote node = RemoteUtil.getRemoteNode(host, nodeId);
-            if (node == null) {
-                logger.warn("Cannot get remote nodeId=" + nodeId);
-                return;
-            }
-            Item item = node.updateItem(key, value);
-            logger.info("Updated item=" + item + " from nodeId=" + nodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
+    public static void update(@NotNull String coordinatorHost, int coordinatorNodeId, int itemKey, @NotNull String itemValue) throws RemoteException {
+        if (itemKey <= 0) {
+            logger.warn("Item key must be positive integer [ itemKey > 0 ] !");
+            return;
         }
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).updateItem(itemKey, itemValue);
+        logger.info("Updated item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
     }
 
     /**
-     * View topology of the circle from the given node id
+     * View ring topology from the node in the ring
      *
-     * @param targetNodeId of the known node
+     * @param coordinatorHost   of the node
+     * @param coordinatorNodeId of the node
      */
-    public static void view(String host, int targetNodeId) {
-        try {
-            NodeRemote remoteNode = RemoteUtil.getRemoteNode(host, targetNodeId);
-            if (remoteNode == null) {
-                logger.warn("Cannot get remote nodeId=" + targetNodeId);
-                return;
-            }
-            for (Map.Entry<Integer, String> entry : remoteNode.getNodes().entrySet()) {
-                NodeRemote node = RemoteUtil.getRemoteNode(entry.getValue(), entry.getKey());
-                if (node == null) {
-                    logger.warn("Cannot get remote nodeId=" + entry.getKey());
-                } else {
-                    logger.debug("Node=" + node.getNode());
-                }
-            }
-            logger.info("Viewed topology from targetNodeId=" + targetNodeId);
-        } catch (Exception e) {
-            logger.error("RMI failed miserably", e);
-            System.exit(1);
+    public static void view(@NotNull String coordinatorHost, int coordinatorNodeId) throws RemoteException {
+        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
+        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorNode, NodeServer.class).getNodes();
+        for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
+            Node node = new Node(entry.getKey(), entry.getValue());
+            logger.debug("Node=" + RemoteUtil.getRemoteNode(node, NodeServer.class).getNode());
         }
+        logger.info("Viewed topology from coordinatorNodeId=" + coordinatorNodeId);
     }
 }
