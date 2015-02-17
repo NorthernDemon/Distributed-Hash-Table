@@ -20,7 +20,7 @@ public abstract class NetworkUtil {
     /**
      * List all possible IPv4 addresses of the current machine
      */
-    public static void printPossibleIPs() {
+    public static void printMachineIPv4() {
         try {
             logger.info("Printing all possible IPv4 of your machine:");
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();

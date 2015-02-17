@@ -66,7 +66,7 @@ public final class ServerLauncher {
         logger.info("Example: recover,localhost,20");
         logger.info("Example: leave");
         StorageUtil.init();
-        NetworkUtil.printPossibleIPs();
+        NetworkUtil.printMachineIPv4();
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 
@@ -215,7 +215,7 @@ public final class ServerLauncher {
     }
 
     /**
-     * Picks replicas from successor node to current node
+     * Picks replicas from neighbour nodes to current node
      *
      * @param successorNode from which to pick
      */
@@ -269,9 +269,9 @@ public final class ServerLauncher {
     private static void passReplicas() throws RemoteException {
         if (!isReplicaSmall()) {
             for (Item replica : node.getReplicas().values()) {
-                Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-                Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
-                if (originalNode.getId() != nthSuccessor.getId()) {
+                Node nodeForItem = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
+                Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, Replication.N);
+                if (nodeForItem.getId() != nthSuccessor.getId()) {
                     RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
                     logger.debug("Passed replica=" + replica + " to nthSuccessor=" + nthSuccessor);
                 }
