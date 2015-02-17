@@ -231,6 +231,18 @@ public final class ServerLauncher {
             RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
             logger.debug("Picked replica=" + replica + " from nthSuccessor=" + nthSuccessor);
         }
+        if (successorNode.getReplicas().isEmpty()) {
+            for (Item replica : RemoteUtil.getPredecessorNode(node).getReplicas().values()) {
+                Node nodeForItem = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
+                for (int i = 1; i < Replication.N; i++) {
+                    Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, i);
+                    if (node.getId() == nthSuccessor.getId()) {
+                        RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(Arrays.asList(replica));
+                        logger.debug("Picked replica=" + replica + " to nthSuccessor=" + nthSuccessor);
+                    }
+                }
+            }
+        }
     }
 
     /**
