@@ -1,6 +1,5 @@
 package it.unitn.ds.util;
 
-import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.rmi.NullNodeRemote;
@@ -71,7 +70,14 @@ public abstract class RemoteUtil {
         return getRemoteNode(new Node(nodeIdForItem, nodes.get(nodeIdForItem)), NodeServer.class).getNode();
     }
 
-    private static int getNodeIdForItem(int itemKey, @NotNull Map<Integer, String> nodes) {
+    /**
+     * Get node id, responsible for item
+     *
+     * @param itemKey of the item
+     * @param nodes   set of nodes
+     * @return responsible node id
+     */
+    public static int getNodeIdForItem(int itemKey, @NotNull Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
             if (nodeId >= itemKey) {
                 return nodeId;
@@ -97,25 +103,20 @@ public abstract class RemoteUtil {
         }
     }
 
-    private static int getSuccessorNodeId(int targetNodeId, @NotNull Map<Integer, String> nodes) {
+    /**
+     * Returns clockwise successor node id in the ring
+     *
+     * @param currentNodeId of the current node
+     * @param nodes         set of nodes
+     * @return clockwise successor node id
+     */
+    public static int getSuccessorNodeId(int currentNodeId, @NotNull Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
-            if (nodeId > targetNodeId) {
+            if (nodeId > currentNodeId) {
                 return nodeId;
             }
         }
         return nodes.keySet().iterator().next();
-    }
-
-    /**
-     * Returns Nth successor
-     *
-     * @param node  current node
-     * @param count how many nodes to skip
-     * @return nth successor node
-     */
-    @NotNull
-    public static Node getNthSuccessor(@NotNull Node node, int count) throws RemoteException {
-        return getNthSuccessor(node, node.getNodes(), count);
     }
 
     /**
@@ -159,7 +160,7 @@ public abstract class RemoteUtil {
      * @param node current node
      * @return counterclockwise predecessor node
      */
-    private static int getPredecessorNodeId(@NotNull Node node) {
+    public static int getPredecessorNodeId(@NotNull Node node) {
         List<Integer> reverse = new LinkedList<>(node.getNodes().keySet());
         Collections.reverse(reverse);
         for (int nodeId : reverse) {
@@ -168,29 +169,5 @@ public abstract class RemoteUtil {
             }
         }
         return reverse.iterator().next();
-    }
-
-    /**
-     * Returns a list of items, that the current node is responsible for taken from successor node
-     *
-     * @param node          current node
-     * @param successorNode clockwise successor node
-     * @return list of items, current node is responsible of
-     */
-    @NotNull
-    public static List<Item> getNodeItems(@NotNull Node node, @NotNull Node successorNode) {
-        int predecessorNodeId = getPredecessorNodeId(node);
-        boolean isZeroCrossed = node.getId() < predecessorNodeId;
-        List<Item> items = new LinkedList<>();
-        // check if item (e.g. 5) falls in range of highest-identified node (e.g. 20) or lowest (e.g. 5)
-        for (Item item : successorNode.getItems().values()) {
-            if (!isZeroCrossed && item.getKey() <= node.getId() && item.getKey() > predecessorNodeId) {
-                items.add(item);
-            }
-            if (isZeroCrossed && (item.getKey() <= node.getId() || item.getKey() > successorNode.getId())) {
-                items.add(item);
-            }
-        }
-        return items;
     }
 }
