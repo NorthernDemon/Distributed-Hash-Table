@@ -11,6 +11,11 @@ package it.unitn.ds;
 public interface Replication {
 
     /**
+     * Timeout for get/update client operations
+     */
+    int TIMEOUT = ServiceConfiguration.getReplicationTimeout();
+
+    /**
      * Write quorum
      */
     int W = ServiceConfiguration.getReplicationW();

@@ -18,6 +18,8 @@ public abstract class ServiceConfiguration {
 
     private static int rmiPort;
 
+    private static int replicationTimeout;
+
     private static int replicationW;
 
     private static int replicationR;
@@ -29,6 +31,7 @@ public abstract class ServiceConfiguration {
             Properties properties = new Properties();
             properties.load(new FileInputStream(SERVICE_PROPERTIES));
             rmiPort = Integer.parseInt(properties.getProperty("rmi-port"));
+            replicationTimeout = Integer.parseInt(properties.getProperty("replication-timeout"));
             replicationW = Integer.parseInt(properties.getProperty("replication-w"));
             replicationR = Integer.parseInt(properties.getProperty("replication-r"));
             replicationN = Integer.parseInt(properties.getProperty("replication-n"));
@@ -39,6 +42,10 @@ public abstract class ServiceConfiguration {
 
     public static int getRmiPort() {
         return rmiPort;
+    }
+
+    public static int getReplicationTimeout() {
+        return replicationTimeout;
     }
 
     public static int getReplicationW() {
