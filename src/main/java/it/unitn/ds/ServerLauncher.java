@@ -30,7 +30,7 @@ public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final int RMI_PORT = 1099;
+    private static final int RMI_PORT = ServiceConfiguration.getRmiPort();
 
     @Nullable
     private static Node node;
@@ -53,7 +53,8 @@ public final class ServerLauncher {
             logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
             return;
         }
-        logger.info("Server Node is ready for request >>");
+        logger.info("Service configuration: RMI port=" + RMI_PORT);
+        logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N);
         logger.info("Example: method name,node host,node id,existing node host, existing node id");
         logger.info("Example: join,localhost,10,localhost,0");
         logger.info("Example: join,localhost,15,localhost,10");

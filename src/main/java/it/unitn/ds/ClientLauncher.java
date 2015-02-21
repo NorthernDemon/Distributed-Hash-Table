@@ -5,6 +5,7 @@ import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeClient;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
+import it.unitn.ds.util.NetworkUtil;
 import it.unitn.ds.util.RemoteUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,6 @@ public final class ClientLauncher {
      * Example: view,localhost,10
      */
     public static void main(String args[]) {
-        logger.info("Client is ready for request >>");
         logger.info("Example: method name,node host,node id,item key,item value");
         logger.info("Example: update,localhost,10,8,New Value Item");
         logger.info("Example: update,localhost,10,12,New Value Item");
@@ -42,6 +42,7 @@ public final class ClientLauncher {
         logger.info("Example: update,localhost,10,26,New Value Item");
         logger.info("Example: get,localhost,10,12");
         logger.info("Example: view,localhost,10");
+        NetworkUtil.printMachineIPv4();
         InputUtil.readInput(ClientLauncher.class.getName());
     }
 

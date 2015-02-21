@@ -14,26 +14,40 @@ public abstract class ServiceConfiguration {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static int port;
+    private static int rmiPort;
 
-    private static String host;
+    private static int replicationW;
+
+    private static int replicationR;
+
+    private static int replicationN;
 
     static {
         try {
             Properties properties = new Properties();
             properties.load(new FileInputStream("service.properties"));
-            port = Integer.parseInt(properties.getProperty("port"));
-            host = properties.getProperty("host");
+            rmiPort = Integer.parseInt(properties.getProperty("rmi-port"));
+            replicationW = Integer.parseInt(properties.getProperty("replication-w"));
+            replicationR = Integer.parseInt(properties.getProperty("replication-r"));
+            replicationN = Integer.parseInt(properties.getProperty("replication-n"));
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Failed to load service configuration!", e);
         }
     }
 
-    public static int getPort() {
-        return port;
+    public static int getRmiPort() {
+        return rmiPort;
     }
 
-    public static String getHost() {
-        return host;
+    public static int getReplicationW() {
+        return replicationW;
+    }
+
+    public static int getReplicationR() {
+        return replicationR;
+    }
+
+    public static int getReplicationN() {
+        return replicationN;
     }
 }
