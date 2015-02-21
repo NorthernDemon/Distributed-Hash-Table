@@ -119,6 +119,9 @@ public abstract class MultithreadingUtil {
         while (!executorService.isTerminated()) {
             try {
                 Future<Item> future = completionService.poll(Replication.TIMEOUT, TimeUnit.SECONDS);
+                if (future == null) {
+                    break;
+                }
                 Item replica = future.get(Replication.TIMEOUT, TimeUnit.SECONDS);
                 if (replica != null) {
                     replicas.add(replica);
@@ -126,10 +129,11 @@ public abstract class MultithreadingUtil {
                         break;
                     }
                 }
-            } catch (Exception ce) {
-                executorService.shutdownNow();
+            } catch (TimeoutException | InterruptedException | ExecutionException e) {
+                logger.error("Failed to execute the thread", e);
             }
         }
+        executorService.shutdownNow();
         return replicas;
     }
 }
