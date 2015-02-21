@@ -110,11 +110,21 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         return item;
     }
 
+    /**
+     * Returns collection of items and replicas
+     * <p/>
+     * Replicas are requested concurrently and returned as soon as R replicas replied
+     *
+     * @param itemKey of the item
+     * @return collection of items with the same item key
+     * @see it.unitn.ds.Replication
+     * @see it.unitn.ds.ServiceConfiguration
+     */
     @NotNull
     private List<Item> getReplicas(int itemKey) throws RemoteException {
         Node nodeForItem = RemoteUtil.getNodeForItem(itemKey, node.getNodes());
         Item item = nodeForItem.getItems().get(itemKey);
-        List<Item> replicas = MultithreadingUtil.getReplicas(itemKey, nodeForItem, item == null ? 0 : 1, node.getNodes());
+        List<Item> replicas = MultithreadingUtil.getReplicas(itemKey, nodeForItem, item != null, node.getNodes());
         if (item != null) {
             logger.debug("Got original item=" + item + " from nodeForItem=" + nodeForItem);
             replicas.add(item);
@@ -122,6 +132,21 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         return replicas;
     }
 
+    /**
+     * Creates new item if exists or updates existing item with new value and increased version number
+     * <p/>
+     * Replicas are updated concurrently
+     * <p/>
+     * Amount of replicas operational must satisfy formula [ Q == max( R , W ) ], where:
+     * - Q is the number of replicas and items gotten from operational nodes
+     * - R and W are read and write quorums respectively
+     *
+     * @param itemKey   of the item
+     * @param itemValue new value of the item
+     * @return created or updated item or null if not agreed on WRITE quorum [ Q != max( R , W ) ]
+     * @see it.unitn.ds.Replication
+     * @see it.unitn.ds.ServiceConfiguration
+     */
     @Nullable
     private Item updateReplicas(int itemKey, @NotNull String itemValue) throws RemoteException {
         List<Item> replicas = getReplicas(itemKey);
@@ -137,6 +162,14 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         return item;
     }
 
+    /**
+     * Returns new item if exists or updates existing item with new value and increased version number
+     *
+     * @param itemKey   of the item
+     * @param itemValue new value of the item
+     * @param replicas  collection of items with the same item key
+     * @return created or updated item
+     */
     @NotNull
     private Item createOrUpdate(int itemKey, @NotNull String itemValue, @NotNull List<Item> replicas) throws RemoteException {
         Item item = getLatestVersion(replicas);
@@ -148,6 +181,12 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
         }
     }
 
+    /**
+     * Returns latest version of the item among all in the collection
+     *
+     * @param replicas collection of items with the same item key
+     * @return latest version item, or null if collection is empty
+     */
     @Nullable
     private Item getLatestVersion(@NotNull List<Item> replicas) throws RemoteException {
         Iterator<Item> iterator = replicas.iterator();

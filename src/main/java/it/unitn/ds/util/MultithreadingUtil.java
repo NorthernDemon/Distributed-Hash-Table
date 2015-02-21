@@ -13,13 +13,25 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Convenient class to work with multithreading of replicas requests
+ * Convenient class to work with multithreading form replicas requests
+ *
+ * @see it.unitn.ds.Replication
+ * @see java.util.concurrent.ExecutorService
+ * @see java.util.concurrent.CompletionService
  */
 public abstract class MultithreadingUtil {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public static void updateReplicas(@NotNull final Item item, @NotNull final Node nodeForItem, @NotNull final Map<Integer, String> nodes) throws RemoteException {
+    /**
+     * Asynchronous update of the replicas (excluding item on original node) served by Replication.N - 1 threads
+     *
+     * @param item        to update
+     * @param nodeForItem original node of the item
+     * @param nodes       set of nodes
+     * @see it.unitn.ds.Replication
+     */
+    public static void updateReplicas(@NotNull final Item item, @NotNull final Node nodeForItem, @NotNull final Map<Integer, String> nodes) {
         ExecutorService executorService = Executors.newFixedThreadPool(Replication.N - 1);
         for (int i = 1; i < Replication.N; i++) {
             final int finalI = i;
@@ -33,24 +45,45 @@ public abstract class MultithreadingUtil {
                             logger.debug("Replicated item=" + item + " to nthSuccessor=" + nthSuccessor);
                         }
                     } catch (RemoteException e) {
-                        logger.error("RMI failed miserably", e);
+                        logger.error("Failed to get node via RMI", e);
                     }
                 }
             });
         }
     }
 
+    /**
+     * Returns list of replicas (excluding item on the original node) served by Replication.N - 1 threads
+     * <p/>
+     * Uses non-waiting CompletionService interface, which returns Future object from Callback as soon as it has been processed
+     *
+     * @param itemKey               of the item
+     * @param nodeForItem           original node of the item
+     * @param isOriginalOperational true if original node has non-null item, false otherwise
+     * @param nodes                 set of nodes
+     * @return collection of replicas
+     * @see it.unitn.ds.Replication
+     */
     @NotNull
-    public static List<Item> getReplicas(int itemKey, @NotNull Node nodeForItem, int countExistingItems, Map<Integer, String> nodes) {
+    public static List<Item> getReplicas(int itemKey, @NotNull Node nodeForItem, boolean isOriginalOperational, Map<Integer, String> nodes) {
         ExecutorService executorService = Executors.newFixedThreadPool(Replication.N - 1);
         CompletionService<Item> completionService = new ExecutorCompletionService<>(executorService);
         for (Callable<Item> callable : getReadCallables(itemKey, nodeForItem, nodes)) {
             completionService.submit(callable);
         }
         executorService.shutdown();
-        return getReplicasFast(Replication.R - countExistingItems, executorService, completionService);
+        int countReplicas = isOriginalOperational ? Replication.R : Replication.R - 1;
+        return getReplicasFast(countReplicas, executorService, completionService);
     }
 
+    /**
+     * Returns a set of Callable objects with replica request
+     *
+     * @param itemKey     of the item
+     * @param nodeForItem original node of the item
+     * @param nodes       set of nodes
+     * @return set of Callable objects with replica request
+     */
     @NotNull
     private static Set<Callable<Item>> getReadCallables(final int itemKey, @NotNull final Node nodeForItem, final Map<Integer, String> nodes) {
         Set<Callable<Item>> callable = new HashSet<>();
@@ -69,6 +102,17 @@ public abstract class MultithreadingUtil {
         return callable;
     }
 
+    /**
+     * Executes the set of Callable replica requests concurrently and returns a collection of replicas within TIMEOUT in SECONDS
+     *
+     * @param countReplicas     minimal number of replicas, sufficient for request,
+     *                          method will return collection of items as soon as
+     *                          this amount of items has been received from replicas
+     * @param executorService   of thread executor
+     * @param completionService of non-waiting thread executor
+     * @return collection of replicas within TIMEOUT in SECONDS
+     * @see it.unitn.ds.Replication
+     */
     @NotNull
     private static List<Item> getReplicasFast(int countReplicas, @NotNull ExecutorService executorService, @NotNull CompletionService<Item> completionService) {
         List<Item> replicas = new LinkedList<>();

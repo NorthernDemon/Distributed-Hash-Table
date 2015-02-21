@@ -34,7 +34,7 @@ public abstract class NetworkUtil {
                 }
             }
         } catch (SocketException e) {
-            logger.error("Failed to get network interface!", e);
+            logger.error("Failed to get network interface", e);
         }
     }
 }

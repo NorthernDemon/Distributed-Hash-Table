@@ -7,6 +7,7 @@ package it.unitn.ds;
  *
  * @see it.unitn.ds.entity.Item
  * @see it.unitn.ds.entity.Node
+ * @see it.unitn.ds.ServiceConfiguration
  */
 public interface Replication {
 

@@ -35,7 +35,7 @@ public abstract class RemoteUtil {
         try {
             return clazz.cast(Naming.lookup(getNodeRMI(node)));
         } catch (Exception e) {
-            logger.error("Failed to get Remote Interface for id=" + node.getId(), e);
+            logger.error("Failed to get remote interface for id=" + node.getId(), e);
             try {
                 return clazz.cast(new NullNodeRemote(new Node()));
             } catch (RemoteException re) {
@@ -89,18 +89,15 @@ public abstract class RemoteUtil {
     /**
      * Returns clockwise successor node in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return clockwise successor node
      */
     @NotNull
-    public static Node getSuccessorNode(@NotNull Node node) throws RemoteException {
-        int successorNodeId = getSuccessorNodeId(node.getId(), node.getNodes());
+    public static Node getSuccessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        int successorNodeId = getSuccessorNodeId(node.getId(), nodes);
         logger.debug("NodeId=" + node.getId() + " found successorNodeId=" + successorNodeId);
-        if (successorNodeId != node.getId()) {
-            return getRemoteNode(new Node(successorNodeId, node.getNodes().get(successorNodeId)), NodeServer.class).getNode();
-        } else {
-            return node;
-        }
+        return getNode(node, successorNodeId, nodes);
     }
 
     /**
@@ -120,7 +117,7 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Returns Nth successor
+     * Returns Nth successor node id in the ring
      *
      * @param node  current node
      * @param nodes set of nodes
@@ -140,28 +137,44 @@ public abstract class RemoteUtil {
     /**
      * Returns counter clockwise predecessor node in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return counter clockwise predecessor
      */
     @NotNull
-    public static Node getPredecessorNode(@NotNull Node node) throws RemoteException {
-        int predecessorNodeId = getPredecessorNodeId(node);
+    public static Node getPredecessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        int predecessorNodeId = getPredecessorNodeId(node, nodes);
         logger.debug("NodeId=" + node.getId() + " found predecessorNodeId=" + predecessorNodeId);
-        if (predecessorNodeId != node.getId()) {
-            return getRemoteNode(new Node(predecessorNodeId, node.getNodes().get(predecessorNodeId)), NodeServer.class).getNode();
+        return getNode(node, predecessorNodeId, nodes);
+    }
+
+    /**
+     * Gets node given nodeId
+     *
+     * @param currentNode current node
+     * @param nodeId      of requested node
+     * @param nodes       set of nodes
+     * @return currentNode if nodeId is the same, remote node otherwise
+     */
+    @NotNull
+    private static Node getNode(@NotNull Node currentNode, int nodeId, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        if (nodeId == currentNode.getId()) {
+            return currentNode;
         } else {
-            return node;
+            Node node = new Node(nodeId, nodes.get(nodeId));
+            return getRemoteNode(node, NodeServer.class).getNode();
         }
     }
 
     /**
      * Returns counter clockwise predecessor node id in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return counterclockwise predecessor node
      */
-    public static int getPredecessorNodeId(@NotNull Node node) {
-        List<Integer> reverse = new LinkedList<>(node.getNodes().keySet());
+    public static int getPredecessorNodeId(@NotNull Node node, @NotNull Map<Integer, String> nodes) {
+        List<Integer> reverse = new LinkedList<>(nodes.keySet());
         Collections.reverse(reverse);
         for (int nodeId : reverse) {
             if (nodeId < node.getId()) {

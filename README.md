@@ -10,17 +10,23 @@ Application is build on top of Java RMI, which is an object-oriented equivalent 
 
 ####Features
     - server node can join or leave the ring
-    - server supports replication of items
     - server can be crashed and recovered
-    - client can view topology of the ring, get or update the items
+    - server can be run on separate hosts
+    - server supports replication of items
+    - client can view topology of the ring
+    - client can get/update items and replicas concurrently
+
+####Assumptions
+    - Nodes join, leave, crash or recover one at a time when there are no ongoing requests
 
 Installation
 -------
 Requirements: *JDK 7*, *Maven*
 
+Configure service parameters in **service.properties** file.
+
 ####To run inside of IDE:
-    - (optional) configure replication parameters in Replication.java
-    - (optional) configure RMI port in ServerLauncher.java
+    - mvn clean install
     - run main ServerLauncher.java
     - run main ClientLauncher.java
 

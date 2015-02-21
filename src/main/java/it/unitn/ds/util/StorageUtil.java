@@ -66,7 +66,7 @@ public abstract class StorageUtil {
         } catch (Exception e) {
             logger.error("Failed to read items from nodeId=" + nodeId, e);
         }
-        logger.debug("Storage of node=" + nodeId + " read all item=" + Arrays.toString(items.toArray()));
+        logger.debug("Storage of node=" + nodeId + " read items=" + Arrays.toString(items.toArray()));
         return items;
     }
 
