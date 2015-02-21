@@ -49,11 +49,11 @@ public final class ServerLauncher {
      * Example: leave
      */
     public static void main(String[] args) {
+        logger.info("You can change service configuration parameters in " + ServiceConfiguration.SERVICE_PROPERTIES);
         logger.info("Service configuration: RMI port=" + RMI_PORT);
         logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N);
         if (Replication.W + Replication.R <= Replication.N) {
             logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
-            logger.warn("You can configure replication parameters in " + ServiceConfiguration.SERVICE_PROPERTIES);
             return;
         }
         logger.info("Type in: method name,node host,node id,existing node host, existing node id");
