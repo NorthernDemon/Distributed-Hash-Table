@@ -49,13 +49,14 @@ public final class ServerLauncher {
      * Example: leave
      */
     public static void main(String[] args) {
-        if (Replication.W + Replication.R <= Replication.N) {
-            logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
-            return;
-        }
         logger.info("Service configuration: RMI port=" + RMI_PORT);
         logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N);
-        logger.info("Example: method name,node host,node id,existing node host, existing node id");
+        if (Replication.W + Replication.R <= Replication.N) {
+            logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
+            logger.warn("You can configure replication parameters in " + ServiceConfiguration.SERVICE_PROPERTIES);
+            return;
+        }
+        logger.info("Type in: method name,node host,node id,existing node host, existing node id");
         logger.info("Example: join,localhost,10,localhost,0");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
@@ -66,6 +67,7 @@ public final class ServerLauncher {
         logger.info("Example: leave");
         StorageUtil.init();
         NetworkUtil.printMachineIPv4();
+        logger.info("Server is ready for request >");
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 

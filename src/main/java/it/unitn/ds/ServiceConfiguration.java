@@ -14,6 +14,8 @@ public abstract class ServiceConfiguration {
 
     private static final Logger logger = LogManager.getLogger();
 
+    public static final String SERVICE_PROPERTIES = "service.properties";
+
     private static int rmiPort;
 
     private static int replicationW;
@@ -25,7 +27,7 @@ public abstract class ServiceConfiguration {
     static {
         try {
             Properties properties = new Properties();
-            properties.load(new FileInputStream("service.properties"));
+            properties.load(new FileInputStream(SERVICE_PROPERTIES));
             rmiPort = Integer.parseInt(properties.getProperty("rmi-port"));
             replicationW = Integer.parseInt(properties.getProperty("replication-w"));
             replicationR = Integer.parseInt(properties.getProperty("replication-r"));
