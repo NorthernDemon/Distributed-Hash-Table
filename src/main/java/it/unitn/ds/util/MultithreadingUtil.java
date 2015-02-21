@@ -123,7 +123,7 @@ public abstract class MultithreadingUtil {
                 if (replica != null) {
                     replicas.add(replica);
                     if (replicas.size() == countReplicas) {
-                        return replicas;
+                        break;
                     }
                 }
             } catch (Exception ce) {

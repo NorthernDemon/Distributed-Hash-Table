@@ -150,7 +150,7 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @Nullable
     private Item updateReplicas(int itemKey, @NotNull String itemValue) throws RemoteException {
         List<Item> replicas = getReplicas(itemKey);
-        if (!replicas.isEmpty() && replicas.size() != Math.max(Replication.R, Replication.W)) {
+        if (!replicas.isEmpty() && replicas.size() < Math.max(Replication.R, Replication.W)) {
             logger.debug("No can agree on WRITE quorum: Q != max(R,W) as Q=" + replicas.size() + ", R=" + Replication.R + ", W=" + Replication.W);
             return null;
         }
