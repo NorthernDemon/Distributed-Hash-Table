@@ -441,7 +441,7 @@ public final class ServerLauncher {
         for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
             if (entry.getKey() != node.getId()) {
                 RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).addNode(node.getId(), node.getHost());
-                logger.debug("Announced join to nodeId=" + entry.getKey());
+                logger.trace("Announced join to nodeId=" + entry.getKey());
             }
         }
     }
@@ -454,7 +454,7 @@ public final class ServerLauncher {
         for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
             if (entry.getKey() != node.getId()) {
                 RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).removeNode(node.getId());
-                logger.debug("Announced leave to nodeId=" + entry.getKey());
+                logger.trace("Announced leave to nodeId=" + entry.getKey());
             }
         }
     }

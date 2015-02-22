@@ -66,7 +66,7 @@ public abstract class RemoteUtil {
     @NotNull
     public static Node getNodeForItem(int itemKey, @NotNull Map<Integer, String> nodes) throws RemoteException {
         int nodeIdForItem = getNodeIdForItem(itemKey, nodes);
-        logger.debug("Found NodeIdForItem=" + nodeIdForItem + " for itemKey=" + itemKey);
+        logger.trace("Found NodeIdForItem=" + nodeIdForItem + " for itemKey=" + itemKey);
         return getRemoteNode(new Node(nodeIdForItem, nodes.get(nodeIdForItem)), NodeServer.class).getNode();
     }
 
@@ -96,7 +96,7 @@ public abstract class RemoteUtil {
     @NotNull
     public static Node getSuccessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
         int successorNodeId = getSuccessorNodeId(node.getId(), nodes);
-        logger.debug("NodeId=" + node.getId() + " found successorNodeId=" + successorNodeId);
+        logger.trace("NodeId=" + node.getId() + " found successorNodeId=" + successorNodeId);
         return getNode(node, successorNodeId, nodes);
     }
 
@@ -130,7 +130,7 @@ public abstract class RemoteUtil {
         for (int i = 0; i < count; i++) {
             nodeId = getSuccessorNodeId(nodeId, nodes);
         }
-        logger.debug("NodeId=" + node.getId() + " found nthSuccessor=" + nodeId);
+        logger.trace("NodeId=" + node.getId() + " found nthSuccessor=" + nodeId);
         return getRemoteNode(new Node(nodeId, nodes.get(nodeId)), NodeServer.class).getNode();
     }
 
@@ -144,7 +144,7 @@ public abstract class RemoteUtil {
     @NotNull
     public static Node getPredecessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
         int predecessorNodeId = getPredecessorNodeId(node, nodes);
-        logger.debug("NodeId=" + node.getId() + " found predecessorNodeId=" + predecessorNodeId);
+        logger.trace("NodeId=" + node.getId() + " found predecessorNodeId=" + predecessorNodeId);
         return getNode(node, predecessorNodeId, nodes);
     }
 
