@@ -29,6 +29,13 @@ Configure service parameters in **service.properties** file.
     - mvn clean install
     - run main ServerLauncher.java
     - run main ClientLauncher.java
+    
+####To run as executable JAR:
+    - mvn clean install
+    - execute following line in new window to start the server:
+        - java -jar DHT-${version}-server-jar-with-dependencies.jar
+    - execute following line in new window to start the client:
+        - java -jar DHT-${version}-client-jar-with-dependencies.jar
 
 Authors
 -------
