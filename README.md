@@ -4,13 +4,9 @@ Distributed Hash Table
 Introduction
 -------
 
-Distributed Hash Table with Data Partitioning and Concurrent Replication inspired by [Amazon Dynamo](http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf).
+Distributed Hash Table with Data Partitioning and Concurrent Replication inspired by [Amazon Dynamo](http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf). Application is build on top of [Java RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation), which is an object-oriented equivalent of remote procedure calls ([RPC](http://en.wikipedia.org/wiki/Remote_procedure_call)).
 
-Server nodes form a ring topology with items and nodes put in ascending order. Each node is responsible for items, falling into the space between current node inclusively and predecessor node exclusively.
-
-Client can get/update item from any node in the ring, even if coordinator node does not have item itself.
-
-Application is build on top of [Java RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation), which is an object-oriented equivalent of remote procedure calls ([RPC](http://en.wikipedia.org/wiki/Remote_procedure_call)).
+Server nodes form a ring topology with items and nodes put in ascending order. Each node is responsible for items, falling into the space between current node inclusively and predecessor node exclusively. Client can get/update item from any node in the ring, even if coordinator node does not have item itself.
 
 ####Features
     - server node can join or leave the ring
@@ -21,11 +17,11 @@ Application is build on top of [Java RMI](http://en.wikipedia.org/wiki/Java_remo
     - client can get/update items and replicas concurrently
 
 ####Assumptions
-    - server node serves one client at a time
-    - all server nodes know every other node in the ring, but cannot tell if it is operational or not
-    - server nodes join/leave/crash/recover one at a time when there are no ongoing requests
-    - server nodes knows at least one existing node (id and host) in the ring in order to join/recover
-    - client knows at least one existing node (id and host) in the ring in order to get/update/view
+    - node serves one client at a time
+    - all nodes know each other in the ring, but cannot tell if it is operational or not
+    - nodes join/leave/crash/recover one at a time when there are no ongoing requests
+    - nodes knows one existing node (id and host) in the ring in order to join/recover
+    - client knows one existing node (id and host) in the ring in order to get/update/view
     - no parallel client requests affecting the same item
 
 Installation
@@ -56,7 +52,7 @@ Server Nodes State Machine Diagram
 
 Documentation
 -------
-Distributed Systems Practical (PDF): ![Diagram](/docs/Distributed_Systems_Practical.pdf)
+![Distributed Systems Practical (PDF)](/docs/Distributed_Systems_Practical.pdf)
 
 Authors
 -------
