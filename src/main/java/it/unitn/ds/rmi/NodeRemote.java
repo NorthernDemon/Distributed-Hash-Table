@@ -17,13 +17,45 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Provides an access to remote node via RMI
+ * <p/>
+ * Uses read/write locks for manipulation with internal data structure of the node in case of multiple requests
+ * <p/>
+ * Read Lock: multiple readers can enter, if not locked for writing
+ * Write Lock: only one writer can enter, if not locked for reading
+ *
+ * @see it.unitn.ds.entity.Item
+ * @see it.unitn.ds.entity.Node
+ * @see java.util.concurrent.locks.ReadWriteLock
+ * @see java.util.concurrent.locks.ReentrantReadWriteLock
  */
 public final class NodeRemote extends UnicastRemoteObject implements NodeServer, NodeClient {
 
     private static final Logger logger = LogManager.getLogger();
+
+    /**
+     * Locks nodes TreeMap operations of the node
+     */
+    private static final ReadWriteLock nodesLock = new ReentrantReadWriteLock();
+
+    /**
+     * Locks items TreeMap operations of the node
+     */
+    private static final ReadWriteLock itemsLock = new ReentrantReadWriteLock();
+
+    /**
+     * Locks replication TreeMap operations of the node
+     */
+    private static final ReadWriteLock replicasLock = new ReentrantReadWriteLock();
+
+    /**
+     * Locks client operations of the node
+     */
+    private static final ReadWriteLock clientLock = new ReentrantReadWriteLock();
 
     @NotNull
     private final Node node;
@@ -42,72 +74,117 @@ public final class NodeRemote extends UnicastRemoteObject implements NodeServer,
     @NotNull
     @Override
     public Map<Integer, String> getNodes() throws RemoteException {
-        logger.debug("Get nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
-        return node.getNodes();
+        nodesLock.readLock().lock();
+        try {
+            logger.debug("Get nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+            return node.getNodes();
+        } finally {
+            nodesLock.readLock().unlock();
+        }
     }
 
     @Override
     public void addNode(int id, @NotNull String host) throws RemoteException {
-        logger.debug("Add id=" + id + ", host=" + host);
-        node.putNode(id, host);
-        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        nodesLock.writeLock().lock();
+        try {
+            logger.debug("Add id=" + id + ", host=" + host);
+            node.putNode(id, host);
+            logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        } finally {
+            nodesLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void removeNode(int id) throws RemoteException {
-        logger.debug("Remove id=" + id);
-        node.removeNode(id);
-        logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        nodesLock.writeLock().lock();
+        try {
+            logger.debug("Remove id=" + id);
+            node.removeNode(id);
+            logger.debug("Current nodes=" + Arrays.toString(node.getNodes().entrySet().toArray()));
+        } finally {
+            nodesLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void updateItems(@NotNull List<Item> items) throws RemoteException {
-        logger.debug("Update items=" + Arrays.toString(items.toArray()));
-        node.putItems(items);
-        StorageUtil.write(node);
-        logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
+        itemsLock.writeLock().lock();
+        try {
+            logger.debug("Update items=" + Arrays.toString(items.toArray()));
+            node.putItems(items);
+            StorageUtil.write(node);
+            logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
+        } finally {
+            itemsLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void removeItems(@NotNull List<Item> items) throws RemoteException {
-        logger.debug("Remove items=" + Arrays.toString(items.toArray()));
-        node.removeItems(items);
-        StorageUtil.write(node);
-        logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
+        itemsLock.writeLock().lock();
+        try {
+            logger.debug("Remove items=" + Arrays.toString(items.toArray()));
+            node.removeItems(items);
+            StorageUtil.write(node);
+            logger.debug("Current items=" + Arrays.toString(node.getItems().keySet().toArray()));
+        } finally {
+            itemsLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void updateReplicas(@NotNull List<Item> replicas) throws RemoteException {
-        logger.debug("Update replicas=" + Arrays.toString(replicas.toArray()));
-        node.putReplicas(replicas);
-        StorageUtil.write(node);
-        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
+        replicasLock.writeLock().lock();
+        try {
+            logger.debug("Update replicas=" + Arrays.toString(replicas.toArray()));
+            node.putReplicas(replicas);
+            StorageUtil.write(node);
+            logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
+        } finally {
+            replicasLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void removeReplicas(@NotNull List<Item> replicas) throws RemoteException {
-        logger.debug("Remove replicas=" + Arrays.toString(replicas.toArray()));
-        node.removeReplicas(replicas);
-        StorageUtil.write(node);
-        logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
+        replicasLock.writeLock().lock();
+        try {
+            logger.debug("Remove replicas=" + Arrays.toString(replicas.toArray()));
+            node.removeReplicas(replicas);
+            StorageUtil.write(node);
+            logger.debug("Current replicas=" + Arrays.toString(node.getReplicas().keySet().toArray()));
+        } finally {
+            replicasLock.writeLock().unlock();
+        }
     }
 
     @Nullable
     @Override
     public Item getItem(int key) throws RemoteException {
-        logger.debug("Get replica item with key=" + key);
-        Item item = getLatestVersion(getReplicas(key));
-        logger.debug("Got replica item=" + item);
-        return item;
+        clientLock.readLock().lock();
+        try {
+            logger.debug("Get replica item with key=" + key);
+            Item item = getLatestVersion(getReplicas(key));
+            logger.debug("Got replica item=" + item);
+            return item;
+        } finally {
+            clientLock.readLock().unlock();
+        }
     }
 
     @Nullable
     @Override
     public Item updateItem(int key, @NotNull String value) throws RemoteException {
-        logger.debug("Update replica item with key=" + key + ", value=" + value);
-        Item item = updateReplicas(key, value);
-        logger.debug("Updated replica item=" + item);
-        return item;
+        clientLock.writeLock().lock();
+        try {
+            logger.debug("Update replica item with key=" + key + ", value=" + value);
+            Item item = updateReplicas(key, value);
+            logger.debug("Updated replica item=" + item);
+            return item;
+        } finally {
+            clientLock.writeLock().unlock();
+        }
     }
 
     /**
