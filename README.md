@@ -30,12 +30,12 @@ Requirements: *JDK 7*, *Maven*
 
 Configure service parameters in **service.properties** file.
 
-####Run inside of IDE:
+####Run inside of IDE
     - mvn clean install
     - run main ServerLauncher.java
     - run main ClientLauncher.java
     
-####Run as executable JAR:
+####Run as executable JAR
     - mvn clean install
     - execute following line in new window to start the server:
         - java -jar DHT-${version}-server-jar-with-dependencies.jar
