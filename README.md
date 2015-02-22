@@ -4,9 +4,13 @@ Distributed Hash Table
 Introduction
 -------
 
-Distributed Hash Table with Data Partitioning forms a ring topology with nodes and items.
+Distributed Hash Table with Data Partitioning and Concurrent Replication inspired by [Amazon Dynamo](http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf).
 
-Application is build on top of Java RMI, which is an object-oriented equivalent of remote procedure calls (RPC).
+Server nodes form a ring topology with items and nodes put in ascending order. Each node is responsible for items, falling into the space between current node inclusively and predecessor node exclusively.
+
+Client can get/update item from any node in the ring, even if coordinator node does not have item itself.
+
+Application is build on top of [Java RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation), which is an object-oriented equivalent of remote procedure calls ([RPC](http://en.wikipedia.org/wiki/Remote_procedure_call)).
 
 ####Features
     - server node can join or leave the ring
@@ -17,7 +21,12 @@ Application is build on top of Java RMI, which is an object-oriented equivalent 
     - client can get/update items and replicas concurrently
 
 ####Assumptions
-    - Nodes join, leave, crash or recover one at a time when there are no ongoing requests
+    - server node serves one client at a time
+    - all server nodes know every other node in the ring, but cannot tell if it is operational or not
+    - server nodes join/leave/crash/recover one at a time when there are no ongoing requests
+    - server nodes knows at least one existing node (id and host) in the ring in order to join/recover
+    - client knows at least one existing node (id and host) in the ring in order to get/update/view
+    - no parallel client requests affecting the same item
 
 Installation
 -------
@@ -25,17 +34,29 @@ Requirements: *JDK 7*, *Maven*
 
 Configure service parameters in **service.properties** file.
 
-####To run inside of IDE:
+####Run inside of IDE:
     - mvn clean install
     - run main ServerLauncher.java
     - run main ClientLauncher.java
     
-####To run as executable JAR:
+####Run as executable JAR:
     - mvn clean install
     - execute following line in new window to start the server:
         - java -jar DHT-${version}-server-jar-with-dependencies.jar
     - execute following line in new window to start the client:
         - java -jar DHT-${version}-client-jar-with-dependencies.jar
+
+Use Case Diagram
+-------
+![Diagram](/diagrams/Use_Case_Diagram.png)
+
+Server Nodes State Machine Diagram
+-------
+![Diagram](/diagrams/Server_Nodes_State_Machine_Diagram.png)
+
+Documentation
+-------
+Distributed Systems Practical (PDF): ![Diagram](/docs/Distributed_Systems_Practical.pdf)
 
 Authors
 -------
