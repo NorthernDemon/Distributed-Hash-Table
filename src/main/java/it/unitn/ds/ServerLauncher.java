@@ -98,7 +98,7 @@ public final class ServerLauncher {
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            NodeServer existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class);
+            Node existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNode();
             if (existingNode.getNodes().isEmpty()) {
                 logger.warn("Existing node must be operational!");
                 return;
@@ -169,12 +169,12 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is recovering...");
-        NodeServer existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class);
-        if (existingNode.getNodes().isEmpty()) {
+        Map<Integer, String> existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNodes();
+        if (existingNode.isEmpty()) {
             logger.warn("Existing node must be operational!");
             return;
         }
-        node.putNodes(existingNode.getNodes());
+        node.putNodes(existingNode);
         Naming.rebind(RemoteUtil.getNodeRMI(node), new NodeRemote(node));
         recoverItems();
         logger.info("NodeId=" + node.getId() + " has recovered");

@@ -53,7 +53,7 @@ public abstract class MultithreadingUtil {
     }
 
     /**
-     * Returns list of replicas (excluding item on the original node) served by Replication.N - 1 threads
+     * Synchronous request for replicas (excluding item on the original node) served by Replication.N - 1 threads
      * <p/>
      * Uses non-waiting CompletionService interface, which returns Future object from Callback as soon as it has been processed
      *
