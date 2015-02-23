@@ -56,7 +56,7 @@ Architecture Diagram
 
 Documentation
 -------
-![Distributed Systems Practical (PDF)](/docs/Distributed_Systems_Practical.pdf)
+[Distributed Systems Practical (PDF)](/docs/Distributed_Systems_Practical.pdf)
 
 Authors
 -------
