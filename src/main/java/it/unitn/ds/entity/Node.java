@@ -51,15 +51,14 @@ public final class Node implements Serializable {
     @NotNull
     private final Map<Integer, String> nodes = new TreeMap<>();
 
-    public Node() {
-        this.id = 0;
-        this.host = "";
-    }
-
     public Node(int id, @NotNull String host) {
         this.id = id;
         this.host = host;
         nodes.put(id, host);
+    }
+
+    public Node() {
+        this(0, "");
     }
 
     public Node(@NotNull Node node) {

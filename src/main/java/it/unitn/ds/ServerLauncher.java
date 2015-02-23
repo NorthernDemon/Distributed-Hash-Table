@@ -2,7 +2,6 @@ package it.unitn.ds;
 
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
-import it.unitn.ds.rmi.NodeClient;
 import it.unitn.ds.rmi.NodeRemote;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.rmi.NullNodeRemote;
@@ -18,21 +17,21 @@ import org.jetbrains.annotations.Nullable;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Simulates server node in the ring
+ * Mind the replica set up before running
  *
+ * @see it.unitn.ds.Replication
+ * @see it.unitn.ds.ServiceConfiguration
  * @see it.unitn.ds.ClientLauncher
  */
 public final class ServerLauncher {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final int RMI_PORT = 1099;
+    private static final int RMI_PORT = ServiceConfiguration.getRmiPort();
 
     @Nullable
     private static Node node;
@@ -51,12 +50,14 @@ public final class ServerLauncher {
      * Example: leave
      */
     public static void main(String[] args) {
+        logger.info("You can change service configuration parameters in " + ServiceConfiguration.CONFIGURATION_FILE);
+        logger.info("Service configuration: RMI port=" + RMI_PORT);
+        logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N + ", TIMEOUT=" + Replication.TIMEOUT);
         if (Replication.W + Replication.R <= Replication.N) {
             logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
             return;
         }
-        logger.info("Server Node is ready for request >>");
-        logger.info("Example: method name,node host,node id,existing node host, existing node id");
+        logger.info("Type in: method name,node host,node id,existing node host, existing node id");
         logger.info("Example: join,localhost,10,localhost,0");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
@@ -66,12 +67,15 @@ public final class ServerLauncher {
         logger.info("Example: recover,localhost,20");
         logger.info("Example: leave");
         StorageUtil.init();
-        NetworkUtil.printPossibleIPs();
+        NetworkUtil.printMachineIPv4();
+        logger.info("Server is ready for request >");
         InputUtil.readInput(ServerLauncher.class.getName());
     }
 
     /**
      * Signals current node to join the ring and take items that fall into it's responsibility from the successor node
+     * <p/>
+     * Existing node MUST be operational!
      *
      * @param nodeHost         host for new current node
      * @param nodeId           id for new current node
@@ -94,18 +98,20 @@ public final class ServerLauncher {
             logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         } else {
             logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            NodeServer existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class);
+            Node existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNode();
+            if (existingNode.getNodes().isEmpty()) {
+                logger.warn("Existing node must be operational!");
+                return;
+            }
             if (existingNode.getNodes().containsKey(nodeId)) {
-                logger.error("Cannot join as nodeId=" + nodeId + " already taken!");
+                logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
                 return;
             }
             node = register(nodeId, nodeHost);
             node.putNodes(existingNode.getNodes());
             announceJoin();
-            Node successorNode = RemoteUtil.getSuccessorNode(node);
-            pickItems(successorNode);
-            pickReplicas(successorNode);
-            logger.info("NodeId=" + nodeId + " connected as node=" + node + " to successorNode=" + successorNode + " from existingNode=" + existingNode);
+            updateItemsAndReplicas();
+            logger.info("NodeId=" + nodeId + " connected as node=" + node + " from existingNode=" + existingNode);
         }
         nodeState = NodeState.CONNECTED;
     }
@@ -119,8 +125,7 @@ public final class ServerLauncher {
             return;
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
-        passItems();
-        passReplicas();
+        passItemsAndReplicas();
         announceLeave();
         Naming.unbind(RemoteUtil.getNodeRMI(node));
         StorageUtil.removeFile(node.getId());
@@ -140,6 +145,7 @@ public final class ServerLauncher {
         }
         logger.info("NodeId=" + node.getId() + " is crashing down...");
         node = new Node(node);
+        node.removeNode(node.getId());
         Naming.rebind(RemoteUtil.getNodeRMI(node), new NullNodeRemote(node));
         logger.info("NodeId=" + node.getId() + " has crashed");
         nodeState = NodeState.CRASHED;
@@ -147,6 +153,8 @@ public final class ServerLauncher {
 
     /**
      * Signals current node to recover based on the existing node in the ring
+     * <p/>
+     * Existing node MUST be operational!
      *
      * @param existingNodeHost of node in the ring to fetch data from
      * @param existingNodeId   of node in the ring to fetch data from
@@ -157,15 +165,18 @@ public final class ServerLauncher {
             return;
         }
         if (node.getId() == existingNodeId) {
-            logger.warn("Existing node id must be different from crashed node id !");
+            logger.warn("Existing node id must be different from crashed node id!");
             return;
         }
         logger.info("NodeId=" + node.getId() + " is recovering...");
-        node.putNodes(RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNodes());
+        Map<Integer, String> existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNodes();
+        if (existingNode.isEmpty()) {
+            logger.warn("Existing node must be operational!");
+            return;
+        }
+        node.putNodes(existingNode);
         Naming.rebind(RemoteUtil.getNodeRMI(node), new NodeRemote(node));
-        distributeStorageItems();
-        updateOwnItems();
-        updateOwnReplicas();
+        recoverItems();
         logger.info("NodeId=" + node.getId() + " has recovered");
         nodeState = NodeState.CONNECTED;
     }
@@ -197,153 +208,229 @@ public final class ServerLauncher {
     }
 
     /**
-     * Picks items from successor node to current node
-     *
-     * @param successorNode from which to pick
+     * When joining the ring update items and replicas for current node
+     * Items are stolen from successor node and passed to successor as replicas
+     * Replicas are updated from neighboring nodes and removed from Replication.N replica node
      */
-    private static void pickItems(@NotNull Node successorNode) throws RemoteException {
-        List<Item> items = RemoteUtil.getNodeItems(node, successorNode);
+    private static void updateItemsAndReplicas() throws RemoteException {
+        Node successorNode = RemoteUtil.getSuccessorNode(node, node.getNodes());
+        List<Item> items = new ArrayList<>(getLatestItems(successorNode).values());
         if (!items.isEmpty()) {
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(node, Replication.N);
-            RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(items);
-            logger.debug("Removed item replicas=" + Arrays.toString(items.toArray()) + " from nthSuccessor=" + nthSuccessor);
             RemoteUtil.getRemoteNode(node, NodeServer.class).updateItems(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).removeItems(items);
             RemoteUtil.getRemoteNode(successorNode, NodeServer.class).updateReplicas(items);
-            logger.debug("Picked items=" + Arrays.toString(items.toArray()) + " from successorNode=" + successorNode);
+            logger.debug("Updated items=" + Arrays.toString(items.toArray()) + " from successorNode=" + successorNode);
+            removeLastReplica(items);
+        }
+        List<Item> replicas = new ArrayList<>(getLatestReplicas());
+        if (!replicas.isEmpty()) {
+            RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(replicas);
+            logger.debug("Updated replicas=" + Arrays.toString(replicas.toArray()) + " from successorNode=" + successorNode);
+            removeLastReplica(replicas);
         }
     }
 
     /**
-     * Picks replicas from successor node to current node
+     * Removes last replica from original node, holding the replica as item
+     * Only for nodes with size higher than max number of replica nodes
      *
-     * @param successorNode from which to pick
+     * @param replicas collection of items to be removed
      */
-    private static void pickReplicas(@NotNull Node successorNode) throws RemoteException {
-        if (isReplicaSmall()) {
-            updateSmallReplicas(successorNode);
-            return;
-        }
-        for (Item replica : successorNode.getReplicas().values()) {
-            Node nodeForItem = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-            Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, Replication.N);
-            RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(Arrays.asList(replica));
-            RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
-            logger.debug("Picked replica=" + replica + " from nthSuccessor=" + nthSuccessor);
-        }
-        if (successorNode.getReplicas().isEmpty()) {
-            for (Item replica : RemoteUtil.getPredecessorNode(node).getReplicas().values()) {
+    private static void removeLastReplica(@NotNull Collection<Item> replicas) throws RemoteException {
+        if (node.getNodes().size() > Replication.N) {
+            for (Item replica : replicas) {
                 Node nodeForItem = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-                for (int i = 1; i < Replication.N; i++) {
-                    Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, i);
-                    if (node.getId() == nthSuccessor.getId()) {
-                        RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(Arrays.asList(replica));
-                        logger.debug("Picked replica=" + replica + " to nthSuccessor=" + nthSuccessor);
+                Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, node.getNodes(), Replication.N);
+                RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
+                logger.debug("Removed replica=" + replica + " from nthSuccessor=" + nthSuccessor);
+            }
+        }
+    }
+
+    /**
+     * When leaving the ring pass items and replicas from current node
+     * Items are passed to successor node and removes it from successors replica
+     * Replicas are propagated to Replication.N + 1 replica node
+     */
+    private static void passItemsAndReplicas() throws RemoteException {
+        List<Item> items = new ArrayList<>(getLatestItems(node).values());
+        if (!items.isEmpty()) {
+            Node successorNode = RemoteUtil.getSuccessorNode(node, node.getNodes());
+            RemoteUtil.getRemoteNode(successorNode, NodeServer.class).removeReplicas(items);
+            RemoteUtil.getRemoteNode(successorNode, NodeServer.class).updateItems(items);
+            logger.debug("Passed items=" + Arrays.toString(items.toArray()) + " to successorNode=" + successorNode);
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(node, node.getNodes(), Replication.N);
+            RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(items);
+            logger.debug("Passed items as replicas=" + Arrays.toString(items.toArray()) + " to nthSuccessor=" + nthSuccessor);
+        }
+        for (Item replica : node.getReplicas().values()) {
+            Node nodeForItem = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, node.getNodes(), Replication.N);
+            RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
+            logger.debug("Passed replica=" + replica + " to nthSuccessor=" + nthSuccessor);
+        }
+    }
+
+    /**
+     * Searches for latest version of items from neighboring nodes
+     * <p/>
+     * Example:
+     * - assume Replication.N = 3
+     * - NX is the node to join
+     * - x marks possible places of replicas for NX
+     * <p/>
+     * ----------------------------------------
+     * | nodes   | N1 | N2 | N3 | NX | N4 | N5 |
+     * ----------------------------------------
+     * | replica |    |    | x  |    | x  |    |
+     * ----------------------------------------
+     * | items   |    | x  | x  |    |    |    |
+     * -----------------------------------------
+     *
+     * @return collection of latest replica items
+     */
+    @NotNull
+    private static Collection<Item> getLatestReplicas() throws RemoteException {
+        Map<Integer, Item> replicas = new TreeMap<>();
+        for (Item replica : RemoteUtil.getSuccessorNode(node, node.getNodes()).getReplicas().values()) {
+            putItemIfNewer(replicas, replica);
+        }
+        Node predecessorNode = node;
+        for (int i = 1; i < Replication.N; i++) {
+            predecessorNode = RemoteUtil.getPredecessorNode(predecessorNode, node.getNodes());
+            for (Item item : predecessorNode.getItems().values()) {
+                putItemIfNewer(replicas, item);
+            }
+            if (i != Replication.N - 1) {
+                for (Item replica : predecessorNode.getReplicas().values()) {
+                    int nodeIdForItem = RemoteUtil.getNodeIdForItem(replica.getKey(), node.getNodes());
+                    for (int j = 1; j < Replication.N; j++) {
+                        nodeIdForItem = RemoteUtil.getSuccessorNodeId(nodeIdForItem, node.getNodes());
+                        if (node.getId() == nodeIdForItem) {
+                            putItemIfNewer(replicas, replica);
+                            break;
+                        }
                     }
                 }
             }
         }
+        return replicas.values();
     }
 
     /**
-     * Passes current node items to its successor and updates replicas to new clockwise Nth successor
+     * Searches for latest version of items from neighboring nodes
+     * <p/>
+     * Example:
+     * - assume Replication.N = 3
+     * - NX is the node to leave
+     * - x marks possible places of items for NX
+     * <p/>
+     * ----------------------------------------
+     * | nodes   | N1 | N2 | NX | N4 | N5 | N6 |
+     * ----------------------------------------
+     * | replica |    |    |    | x  | x  |    |
+     * ----------------------------------------
+     * | items   |    |    | x  |    |    |    |
+     * -----------------------------------------
+     *
+     * @param startNode node to start search from
+     * @return collection of latest replica items
      */
-    private static void passItems() throws RemoteException {
-        if (!node.getItems().isEmpty()) {
-            List<Item> items = new LinkedList<>(node.getItems().values());
-            Node successorNode = RemoteUtil.getSuccessorNode(node);
-            RemoteUtil.getRemoteNode(successorNode, NodeServer.class).removeReplicas(items);
-            RemoteUtil.getRemoteNode(successorNode, NodeServer.class).updateItems(items);
-            logger.debug("Passed items=" + Arrays.toString(items.toArray()) + " to successorNode=" + successorNode);
-            if (!isReplicaSmall()) {
-                Node nthSuccessor = RemoteUtil.getNthSuccessor(node, Replication.N);
-                RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(items);
-                logger.debug("Passed items replicas=" + Arrays.toString(items.toArray()) + " to nthSuccessor=" + nthSuccessor);
-            }
+    @NotNull
+    private static Map<Integer, Item> getLatestItems(@NotNull Node startNode) throws RemoteException {
+        Map<Integer, Item> items = new TreeMap<>();
+        int predecessorNodeId = RemoteUtil.getPredecessorNodeId(node, node.getNodes());
+        putItems(predecessorNodeId, items, startNode.getItems().values());
+        for (int i = 1; i < Replication.N; i++) {
+            Node nthSuccessor = RemoteUtil.getNthSuccessor(startNode, node.getNodes(), i);
+            putItems(predecessorNodeId, items, nthSuccessor.getReplicas().values());
         }
+        return items;
     }
 
     /**
-     * Passes replicas to other nodes
+     * Puts items into modifiable "items map" from "nodeItems" collection if they fall into responsibility of the current node
+     *
+     * @param predecessorNodeId predecessor id of the current node
+     * @param items             modifiable map of items
+     * @param nodeItems         set of items
      */
-    private static void passReplicas() throws RemoteException {
-        if (!isReplicaSmall()) {
-            for (Item replica : node.getReplicas().values()) {
-                Node originalNode = RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes());
-                Node nthSuccessor = RemoteUtil.getNthSuccessor(originalNode, Replication.N);
-                if (originalNode.getId() != nthSuccessor.getId()) {
-                    RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
-                    logger.debug("Passed replica=" + replica + " to nthSuccessor=" + nthSuccessor);
+    private static void putItems(int predecessorNodeId, @NotNull Map<Integer, Item> items, @NotNull Collection<Item> nodeItems) {
+        for (Item item : nodeItems) {
+            if (node.getId() < predecessorNodeId) {
+                // zero crossed (e.g. node 30 has successor 10, holds items 8 and 36)
+                if (item.getKey() <= node.getId() || item.getKey() > predecessorNodeId) {
+                    putItemIfNewer(items, item);
+                }
+            } else {
+                // zero NOT crossed (e.g. node 10 has successor 15, holds items 12 and 13)
+                if (item.getKey() <= node.getId() && item.getKey() > predecessorNodeId) {
+                    putItemIfNewer(items, item);
                 }
             }
         }
     }
 
     /**
-     * Distributes items and replicas from local storage to respective nodes if our version is newer than in the ring
+     * Puts into "items map" new "item" value if it does not exist yet, or the existing version is lower
+     *
+     * @param items modifiable map of items
+     * @param item  item to test
      */
-    private static void distributeStorageItems() throws RemoteException {
-        for (Item item : StorageUtil.readAll(node.getId())) {
+    private static void putItemIfNewer(@NotNull Map<Integer, Item> items, @NotNull Item item) {
+        Item existingItem = items.get(item.getKey());
+        if (existingItem == null || existingItem.getVersion() < item.getVersion()) {
+            items.put(item.getKey(), item);
+        }
+    }
+
+    /**
+     * When recovering the ring update it's items and replicas from neighboring nodes
+     * After that, recover items from local storage if the item does not exist in the ring or it's version is lower
+     */
+    private static void recoverItems() throws RemoteException {
+        List<Item> localStorage = StorageUtil.readAll(node.getId());
+        Node successorNode = RemoteUtil.getSuccessorNode(node, node.getNodes());
+        List<Item> items = new ArrayList<>(getLatestItems(successorNode).values());
+        RemoteUtil.getRemoteNode(node, NodeServer.class).updateItems(items);
+        logger.debug("Recovered items=" + Arrays.toString(items.toArray()));
+        List<Item> replicas = new ArrayList<>(getLatestReplicas());
+        RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(replicas);
+        logger.debug("Recovered replicas=" + Arrays.toString(replicas.toArray()));
+        for (Item item : localStorage) {
             Node nodeForItem = RemoteUtil.getNodeForItem(item.getKey(), node.getNodes());
-            Item latestItem = RemoteUtil.getRemoteNode(nodeForItem, NodeClient.class).getItem(item.getKey());
-            if (latestItem == null || latestItem.getVersion() < item.getVersion()) {
-                updateItem(item);
+            Item latestItems = getLatestNodeItem(nodeForItem, item.getKey());
+            if (latestItems == null || item.getVersion() > latestItems.getVersion()) {
+                RemoteUtil.getRemoteNode(nodeForItem, NodeServer.class).updateItems(Arrays.asList(item));
+                logger.debug("Recovered storage item=" + item + " to nodeForItem=" + nodeForItem);
+                for (int i = 1; i < Replication.N; i++) {
+                    Node nthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, node.getNodes(), i);
+                    RemoteUtil.getRemoteNode(nthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(item));
+                    logger.debug("Recovered storage replica=" + item + " to nthSuccessor=" + nthSuccessor);
+                }
             }
         }
     }
 
     /**
-     * Updates own items of the current node from successor node
-     */
-    private static void updateOwnItems() throws RemoteException {
-        for (Item replica : RemoteUtil.getSuccessorNode(node).getReplicas().values()) {
-            updateItem(replica);
-        }
-    }
-
-    /**
-     * Updates own replicas of the current node from predecessor node
-     */
-    private static void updateOwnReplicas() throws RemoteException {
-        Node predecessorNode = RemoteUtil.getPredecessorNode(node);
-        if (isReplicaSmall()) {
-            updateSmallReplicas(predecessorNode);
-            return;
-        }
-        for (Item replica : predecessorNode.getReplicas().values()) {
-            updateReplicas(replica, RemoteUtil.getNodeForItem(replica.getKey(), node.getNodes()));
-        }
-    }
-
-    private static void updateItem(Item item) throws RemoteException {
-        Node nodeForItem = RemoteUtil.getNodeForItem(item.getKey(), node.getNodes());
-        RemoteUtil.getRemoteNode(nodeForItem, NodeServer.class).updateItems(Arrays.asList(item));
-        logger.debug("Recovered item=" + item + " to nodeForItem=" + nodeForItem);
-        updateReplicas(item, nodeForItem);
-    }
-
-    private static void updateReplicas(Item replica, Node nodeForItem) throws RemoteException {
-        for (int i = 1; i < Replication.N; i++) {
-            Node oldNthSuccessor = RemoteUtil.getNthSuccessor(node, i);
-            RemoteUtil.getRemoteNode(oldNthSuccessor, NodeServer.class).removeReplicas(Arrays.asList(replica));
-            logger.debug("Removed replica=" + replica + " to oldNthSuccessor=" + oldNthSuccessor);
-            Node newNthSuccessor = RemoteUtil.getNthSuccessor(nodeForItem, i);
-            RemoteUtil.getRemoteNode(newNthSuccessor, NodeServer.class).updateReplicas(Arrays.asList(replica));
-            logger.debug("Recovered replica=" + replica + " to newNthSuccessor=" + newNthSuccessor);
-        }
-    }
-
-    /**
-     * If number of nodes less than replica nodes, assume all items to be replicas
+     * Get latest node item (it any)
      *
-     * @param existingNode in the ring
+     * @param nodeForItem original node, responsible for the item
+     * @param itemKey     of the item
+     * @return latest item, null it none was found
      */
-    private static void updateSmallReplicas(@NotNull Node existingNode) throws RemoteException {
-        List<Item> replicas = new LinkedList<>(existingNode.getItems().values());
-        replicas.addAll(existingNode.getReplicas().values());
-        replicas.removeAll(node.getItems().values());
-        RemoteUtil.getRemoteNode(node, NodeServer.class).updateReplicas(replicas);
-        logger.debug("[ replication <= nodes ] Picked replicas=" + Arrays.toString(replicas.toArray()) + " from existingNode=" + existingNode);
+    @Nullable
+    private static Item getLatestNodeItem(Node nodeForItem, int itemKey) throws RemoteException {
+        Map<Integer, Item> items = new TreeMap<>();
+        for (Item item : nodeForItem.getItems().values()) {
+            putItemIfNewer(items, item);
+        }
+        for (int i = 1; i < Replication.N; i++) {
+            for (Item item : RemoteUtil.getNthSuccessor(nodeForItem, node.getNodes(), i).getReplicas().values()) {
+                putItemIfNewer(items, item);
+            }
+        }
+        return items.get(itemKey);
     }
 
     /**
@@ -354,7 +441,7 @@ public final class ServerLauncher {
         for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
             if (entry.getKey() != node.getId()) {
                 RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).addNode(node.getId(), node.getHost());
-                logger.debug("Announced join to nodeId=" + entry.getKey());
+                logger.trace("Announced join to nodeId=" + entry.getKey());
             }
         }
     }
@@ -367,7 +454,7 @@ public final class ServerLauncher {
         for (Map.Entry<Integer, String> entry : node.getNodes().entrySet()) {
             if (entry.getKey() != node.getId()) {
                 RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).removeNode(node.getId());
-                logger.debug("Announced leave to nodeId=" + entry.getKey());
+                logger.trace("Announced leave to nodeId=" + entry.getKey());
             }
         }
     }
@@ -381,14 +468,5 @@ public final class ServerLauncher {
         } catch (RemoteException e) {
             // already started
         }
-    }
-
-    /**
-     * Returns if number of nodes in the ring is smaller than replica size
-     *
-     * @return true if replica larger than nodes, false otherwise
-     */
-    private static boolean isReplicaSmall() {
-        return node.getNodes().size() <= Replication.N;
     }
 }

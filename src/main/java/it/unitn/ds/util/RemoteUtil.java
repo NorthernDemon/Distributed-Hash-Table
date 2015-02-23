@@ -1,6 +1,5 @@
 package it.unitn.ds.util;
 
-import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.rmi.NullNodeRemote;
@@ -36,7 +35,7 @@ public abstract class RemoteUtil {
         try {
             return clazz.cast(Naming.lookup(getNodeRMI(node)));
         } catch (Exception e) {
-            logger.error("Failed to get Remote Interface for id=" + node.getId(), e);
+            logger.error("Failed to get remote interface for id=" + node.getId(), e);
             try {
                 return clazz.cast(new NullNodeRemote(new Node()));
             } catch (RemoteException re) {
@@ -67,11 +66,18 @@ public abstract class RemoteUtil {
     @NotNull
     public static Node getNodeForItem(int itemKey, @NotNull Map<Integer, String> nodes) throws RemoteException {
         int nodeIdForItem = getNodeIdForItem(itemKey, nodes);
-        logger.debug("Found NodeIdForItem=" + nodeIdForItem + " for itemKey=" + itemKey);
+        logger.trace("Found NodeIdForItem=" + nodeIdForItem + " for itemKey=" + itemKey);
         return getRemoteNode(new Node(nodeIdForItem, nodes.get(nodeIdForItem)), NodeServer.class).getNode();
     }
 
-    private static int getNodeIdForItem(int itemKey, @NotNull Map<Integer, String> nodes) {
+    /**
+     * Get node id, responsible for item
+     *
+     * @param itemKey of the item
+     * @param nodes   set of nodes
+     * @return responsible node id
+     */
+    public static int getNodeIdForItem(int itemKey, @NotNull Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
             if (nodeId >= itemKey) {
                 return nodeId;
@@ -83,23 +89,27 @@ public abstract class RemoteUtil {
     /**
      * Returns clockwise successor node in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return clockwise successor node
      */
     @NotNull
-    public static Node getSuccessorNode(@NotNull Node node) throws RemoteException {
-        int successorNodeId = getSuccessorNodeId(node.getId(), node.getNodes());
-        logger.debug("NodeId=" + node.getId() + " found successorNodeId=" + successorNodeId);
-        if (successorNodeId != node.getId()) {
-            return getRemoteNode(new Node(successorNodeId, node.getNodes().get(successorNodeId)), NodeServer.class).getNode();
-        } else {
-            return node;
-        }
+    public static Node getSuccessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        int successorNodeId = getSuccessorNodeId(node.getId(), nodes);
+        logger.trace("NodeId=" + node.getId() + " found successorNodeId=" + successorNodeId);
+        return getNode(node, successorNodeId, nodes);
     }
 
-    private static int getSuccessorNodeId(int targetNodeId, @NotNull Map<Integer, String> nodes) {
+    /**
+     * Returns clockwise successor node id in the ring
+     *
+     * @param currentNodeId of the current node
+     * @param nodes         set of nodes
+     * @return clockwise successor node id
+     */
+    public static int getSuccessorNodeId(int currentNodeId, @NotNull Map<Integer, String> nodes) {
         for (int nodeId : nodes.keySet()) {
-            if (nodeId > targetNodeId) {
+            if (nodeId > currentNodeId) {
                 return nodeId;
             }
         }
@@ -107,19 +117,7 @@ public abstract class RemoteUtil {
     }
 
     /**
-     * Returns Nth successor
-     *
-     * @param node  current node
-     * @param count how many nodes to skip
-     * @return nth successor node
-     */
-    @NotNull
-    public static Node getNthSuccessor(@NotNull Node node, int count) throws RemoteException {
-        return getNthSuccessor(node, node.getNodes(), count);
-    }
-
-    /**
-     * Returns Nth successor
+     * Returns Nth successor node id in the ring
      *
      * @param node  current node
      * @param nodes set of nodes
@@ -132,35 +130,51 @@ public abstract class RemoteUtil {
         for (int i = 0; i < count; i++) {
             nodeId = getSuccessorNodeId(nodeId, nodes);
         }
-        logger.debug("NodeId=" + node.getId() + " found nthSuccessor=" + nodeId);
+        logger.trace("NodeId=" + node.getId() + " found nthSuccessor=" + nodeId);
         return getRemoteNode(new Node(nodeId, nodes.get(nodeId)), NodeServer.class).getNode();
     }
 
     /**
      * Returns counter clockwise predecessor node in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return counter clockwise predecessor
      */
     @NotNull
-    public static Node getPredecessorNode(@NotNull Node node) throws RemoteException {
-        int predecessorNodeId = getPredecessorNodeId(node);
-        logger.debug("NodeId=" + node.getId() + " found predecessorNodeId=" + predecessorNodeId);
-        if (predecessorNodeId != node.getId()) {
-            return getRemoteNode(new Node(predecessorNodeId, node.getNodes().get(predecessorNodeId)), NodeServer.class).getNode();
+    public static Node getPredecessorNode(@NotNull Node node, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        int predecessorNodeId = getPredecessorNodeId(node, nodes);
+        logger.trace("NodeId=" + node.getId() + " found predecessorNodeId=" + predecessorNodeId);
+        return getNode(node, predecessorNodeId, nodes);
+    }
+
+    /**
+     * Gets node given nodeId
+     *
+     * @param currentNode current node
+     * @param nodeId      of requested node
+     * @param nodes       set of nodes
+     * @return currentNode if nodeId is the same, remote node otherwise
+     */
+    @NotNull
+    private static Node getNode(@NotNull Node currentNode, int nodeId, @NotNull Map<Integer, String> nodes) throws RemoteException {
+        if (nodeId == currentNode.getId()) {
+            return currentNode;
         } else {
-            return node;
+            Node node = new Node(nodeId, nodes.get(nodeId));
+            return getRemoteNode(node, NodeServer.class).getNode();
         }
     }
 
     /**
      * Returns counter clockwise predecessor node id in the ring
      *
-     * @param node current node
+     * @param node  current node
+     * @param nodes set of nodes
      * @return counterclockwise predecessor node
      */
-    private static int getPredecessorNodeId(@NotNull Node node) {
-        List<Integer> reverse = new LinkedList<>(node.getNodes().keySet());
+    public static int getPredecessorNodeId(@NotNull Node node, @NotNull Map<Integer, String> nodes) {
+        List<Integer> reverse = new LinkedList<>(nodes.keySet());
         Collections.reverse(reverse);
         for (int nodeId : reverse) {
             if (nodeId < node.getId()) {
@@ -168,29 +182,5 @@ public abstract class RemoteUtil {
             }
         }
         return reverse.iterator().next();
-    }
-
-    /**
-     * Returns a list of items, that the current node is responsible for taken from successor node
-     *
-     * @param node          current node
-     * @param successorNode clockwise successor node
-     * @return list of items, current node is responsible of
-     */
-    @NotNull
-    public static List<Item> getNodeItems(@NotNull Node node, @NotNull Node successorNode) {
-        int predecessorNodeId = getPredecessorNodeId(node);
-        boolean isZeroCrossed = node.getId() < predecessorNodeId;
-        List<Item> items = new LinkedList<>();
-        // check if item (e.g. 5) falls in range of highest-identified node (e.g. 20) or lowest (e.g. 5)
-        for (Item item : successorNode.getItems().values()) {
-            if (!isZeroCrossed && item.getKey() <= node.getId() && item.getKey() > predecessorNodeId) {
-                items.add(item);
-            }
-            if (isZeroCrossed && (item.getKey() <= node.getId() || item.getKey() > successorNode.getId())) {
-                items.add(item);
-            }
-        }
-        return items;
     }
 }

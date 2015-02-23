@@ -40,6 +40,11 @@ public final class Item implements Serializable {
         this(key, value, 1);
     }
 
+    /**
+     * Updates value and increase version by 1
+     *
+     * @param value new item value
+     */
     public void update(@NotNull String value) {
         this.value = value;
         this.version++;
