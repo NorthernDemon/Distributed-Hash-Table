@@ -50,6 +50,10 @@ Server Nodes State Machine Diagram
 -------
 ![Diagram](/diagrams/Server_Nodes_State_Machine_Diagram.png)
 
+Architecture Diagram
+-------
+![Diagram](/diagrams/Architecture_Diagram.png)
+
 Documentation
 -------
 ![Distributed Systems Practical (PDF)](/docs/Distributed_Systems_Practical.pdf)
