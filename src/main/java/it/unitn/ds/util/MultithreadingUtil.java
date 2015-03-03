@@ -72,7 +72,7 @@ public abstract class MultithreadingUtil {
             completionService.submit(callable);
         }
         executorService.shutdown();
-        int countReplicas = isOriginalOperational ? Replication.R : Replication.R - 1;
+        int countReplicas = isOriginalOperational ? Replication.R - 1 : Replication.R;
         return getReplicasFast(countReplicas, executorService, completionService);
     }
 
