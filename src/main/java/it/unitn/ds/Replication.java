@@ -1,5 +1,7 @@
 package it.unitn.ds;
 
+import it.unitn.ds.entity.ReplicationTimeout;
+
 /**
  * Configures replication within the ring and quorums for read/write access
  * <p/>
@@ -14,7 +16,7 @@ public interface Replication {
     /**
      * Timeout for get/update client operations
      */
-    int TIMEOUT = ServiceConfiguration.getReplicationTimeout();
+    ReplicationTimeout TIMEOUT = ServiceConfiguration.getReplicationTimeout();
 
     /**
      * Write quorum

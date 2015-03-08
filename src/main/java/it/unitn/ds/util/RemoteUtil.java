@@ -161,8 +161,7 @@ public abstract class RemoteUtil {
         if (nodeId == currentNode.getId()) {
             return currentNode;
         } else {
-            Node node = new Node(nodeId, nodes.get(nodeId));
-            return getRemoteNode(node, NodeServer.class).getNode();
+            return getRemoteNode(new Node(nodeId, nodes.get(nodeId)), NodeServer.class).getNode();
         }
     }
 

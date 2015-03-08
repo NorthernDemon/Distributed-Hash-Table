@@ -3,7 +3,6 @@ package it.unitn.ds;
 import it.unitn.ds.entity.Item;
 import it.unitn.ds.entity.Node;
 import it.unitn.ds.rmi.NodeClient;
-import it.unitn.ds.rmi.NodeServer;
 import it.unitn.ds.util.InputUtil;
 import it.unitn.ds.util.NetworkUtil;
 import it.unitn.ds.util.RemoteUtil;
@@ -12,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.rmi.RemoteException;
-import java.util.Map;
 
 /**
  * Simulates client of the server node's ring
@@ -41,7 +39,6 @@ public final class ClientLauncher {
         logger.info("Example: update,localhost,10,22,New Value Item");
         logger.info("Example: update,localhost,10,26,New Value Item");
         logger.info("Example: get,localhost,10,12");
-        logger.info("Example: view,localhost,10");
         NetworkUtil.printMachineIPv4();
         logger.info("Client is ready for request >");
         InputUtil.readInput(ClientLauncher.class.getName());
@@ -76,21 +73,5 @@ public final class ClientLauncher {
         Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
         Item item = RemoteUtil.getRemoteNode(coordinatorNode, NodeClient.class).updateItem(itemKey, itemValue);
         logger.info("Updated item=" + item + " from coordinatorNodeId=" + coordinatorNodeId);
-    }
-
-    /**
-     * View ring topology from the node in the ring
-     *
-     * @param coordinatorHost   of the node
-     * @param coordinatorNodeId of the node
-     */
-    public static void view(@NotNull String coordinatorHost, int coordinatorNodeId) throws RemoteException {
-        Node coordinatorNode = new Node(coordinatorNodeId, coordinatorHost);
-        Map<Integer, String> nodes = RemoteUtil.getRemoteNode(coordinatorNode, NodeServer.class).getNodes();
-        for (Map.Entry<Integer, String> entry : nodes.entrySet()) {
-            Node node = new Node(entry.getKey(), entry.getValue());
-            logger.debug("Node=" + RemoteUtil.getRemoteNode(node, NodeServer.class).getNode());
-        }
-        logger.info("Viewed topology from coordinatorNodeId=" + coordinatorNodeId);
     }
 }

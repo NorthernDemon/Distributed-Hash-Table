@@ -1,5 +1,6 @@
 package it.unitn.ds;
 
+import it.unitn.ds.entity.ReplicationTimeout;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +19,7 @@ public abstract class ServiceConfiguration {
 
     private static int rmiPort;
 
-    private static int replicationTimeout;
+    private static ReplicationTimeout replicationTimeout;
 
     private static int replicationW;
 
@@ -31,7 +32,9 @@ public abstract class ServiceConfiguration {
             Properties properties = new Properties();
             properties.load(new FileInputStream(CONFIGURATION_FILE));
             rmiPort = Integer.parseInt(properties.getProperty("rmi-port"));
-            replicationTimeout = Integer.parseInt(properties.getProperty("replication-timeout"));
+            int replicationTimeoutValue = Integer.parseInt(properties.getProperty("replication-timeout-value"));
+            String replicationTimeoutUnit = properties.getProperty("replication-timeout-unit");
+            replicationTimeout = new ReplicationTimeout(replicationTimeoutValue, replicationTimeoutUnit);
             replicationW = Integer.parseInt(properties.getProperty("replication-w"));
             replicationR = Integer.parseInt(properties.getProperty("replication-r"));
             replicationN = Integer.parseInt(properties.getProperty("replication-n"));
@@ -44,7 +47,7 @@ public abstract class ServiceConfiguration {
         return rmiPort;
     }
 
-    public static int getReplicationTimeout() {
+    public static ReplicationTimeout getReplicationTimeout() {
         return replicationTimeout;
     }
 
