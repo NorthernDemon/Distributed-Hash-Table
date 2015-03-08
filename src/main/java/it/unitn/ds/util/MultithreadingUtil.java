@@ -118,18 +118,18 @@ public abstract class MultithreadingUtil {
         List<Item> replicas = new LinkedList<>();
         while (!executorService.isTerminated()) {
             try {
-                Future<Item> future = completionService.poll(Replication.TIMEOUT, TimeUnit.SECONDS);
+                Future<Item> future = completionService.poll(Replication.TIMEOUT.getValue(), Replication.TIMEOUT.getUnit());
                 if (future == null) {
-                    break;
+                    break; // timeout
                 }
-                Item replica = future.get(Replication.TIMEOUT, TimeUnit.SECONDS);
+                Item replica = future.get(Replication.TIMEOUT.getValue(), Replication.TIMEOUT.getUnit());
                 if (replica != null) {
                     replicas.add(replica);
                     if (replicas.size() == countReplicas) {
-                        break;
+                        break; // enough replicas responded
                     }
                 }
-            } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            } catch (Exception e) {
                 logger.error("Failed to execute the thread", e);
             }
         }

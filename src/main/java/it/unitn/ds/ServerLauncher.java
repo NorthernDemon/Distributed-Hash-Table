@@ -52,7 +52,8 @@ public final class ServerLauncher {
     public static void main(String[] args) {
         logger.info("You can change service configuration parameters in " + ServiceConfiguration.CONFIGURATION_FILE);
         logger.info("Service configuration: RMI port=" + RMI_PORT);
-        logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N + ", TIMEOUT=" + Replication.TIMEOUT);
+        logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N);
+        logger.info("Service configuration: Replication TIMEOUT-VALUE=" + Replication.TIMEOUT_VALUE + ", TIMEOUT-UNIT=" + Replication.TIMEOUT_UNIT);
         if (Replication.W + Replication.R <= Replication.N) {
             logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
             return;
