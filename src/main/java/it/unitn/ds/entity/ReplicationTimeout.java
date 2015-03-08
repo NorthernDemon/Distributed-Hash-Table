@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  * @see it.unitn.ds.Replication
  * @see it.unitn.ds.util.MultithreadingUtil
  */
-public class ReplicationTimeout {
+public final class ReplicationTimeout {
 
     private int value;
 
