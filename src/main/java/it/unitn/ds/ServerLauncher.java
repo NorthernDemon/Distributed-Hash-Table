@@ -102,7 +102,7 @@ public final class ServerLauncher {
      */
     public static void join(@NotNull String nodeHost, int nodeId, @NotNull String existingNodeHost, int existingNodeId) throws Exception {
         if (nodeState != NodeState.DISCONNECTED) {
-            logger.warn("Cannot join without leaving first!");
+            logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
             return;
         }
         if (nodeId <= 0) {
@@ -139,7 +139,7 @@ public final class ServerLauncher {
      */
     public static void leave() throws Exception {
         if (nodeState != NodeState.CONNECTED) {
-            logger.warn("Cannot leave without joining first!");
+            logger.warn("Must be CONNECTED to leave! Current nodeState=" + nodeState);
             return;
         }
         logger.info("NodeId=" + node.getId() + " is disconnecting from the ring...");
@@ -158,7 +158,7 @@ public final class ServerLauncher {
      */
     public static void crash() throws Exception {
         if (nodeState != NodeState.CONNECTED) {
-            logger.warn("Cannot crash without joining first!");
+            logger.warn("Must be CONNECTED to crash! Current nodeState=" + nodeState);
             return;
         }
         logger.info("NodeId=" + node.getId() + " is crashing down...");
@@ -179,7 +179,7 @@ public final class ServerLauncher {
      */
     public static void recover(@NotNull String existingNodeHost, int existingNodeId) throws Exception {
         if (nodeState != NodeState.CRASHED) {
-            logger.warn("Cannot recover without crashing first!");
+            logger.warn("Must be CRASHED to recover! Current nodeState=" + nodeState);
             return;
         }
         if (node.getId() == existingNodeId) {
