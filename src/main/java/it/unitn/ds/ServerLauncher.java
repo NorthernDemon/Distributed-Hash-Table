@@ -73,6 +73,24 @@ public final class ServerLauncher {
     }
 
     /**
+     * View ring topology from the node in the ring
+     */
+    public static void view() throws RemoteException {
+        if (nodeState != NodeState.CONNECTED) {
+            logger.warn("Must be CONNECTED to view topology! Current nodeState=" + nodeState);
+            return;
+        }
+        List<Node> nodes = new LinkedList<>();
+        for (Map.Entry<Integer, String> entry : RemoteUtil.getRemoteNode(node, NodeServer.class).getNodes().entrySet()) {
+            nodes.add(RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).getNode());
+        }
+        logger.info("Viewing topology from node=" + node);
+        for (Node node : nodes) {
+            logger.info(node);
+        }
+    }
+
+    /**
      * Signals current node to join the ring and take items that fall into it's responsibility from the successor node
      * <p/>
      * Existing node MUST be operational!
