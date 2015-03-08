@@ -16,7 +16,7 @@
         <maven-compiler-plugin.version>3.2</maven-compiler-plugin.version>
         <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
         <maven-assembly-plugin.version>2.5.3</maven-assembly-plugin.version>
-        <log4j.version>2.1</log4j.version>
+        <log4j.version>2.2</log4j.version>
         <guava.version>18.0</guava.version>
         <annotations.version>13.0</annotations.version>
     </properties>
