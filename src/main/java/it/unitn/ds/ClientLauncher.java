@@ -39,7 +39,6 @@ public final class ClientLauncher {
         logger.info("Example: update,localhost,10,22,New Value Item");
         logger.info("Example: update,localhost,10,26,New Value Item");
         logger.info("Example: get,localhost,10,12");
-        logger.info("Example: view,localhost,10");
         NetworkUtil.printMachineIPv4();
         logger.info("Client is ready for request >");
         InputUtil.readInput(ClientLauncher.class.getName());

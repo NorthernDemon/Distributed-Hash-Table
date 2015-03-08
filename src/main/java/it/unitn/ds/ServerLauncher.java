@@ -53,13 +53,13 @@ public final class ServerLauncher {
         logger.info("You can change service configuration parameters in " + ServiceConfiguration.CONFIGURATION_FILE);
         logger.info("Service configuration: RMI port=" + RMI_PORT);
         logger.info("Service configuration: Replication W=" + Replication.W + ", R=" + Replication.R + ", N=" + Replication.N);
-        logger.info("Service configuration: Replication TIMEOUT-VALUE=" + Replication.TIMEOUT_VALUE + ", TIMEOUT-UNIT=" + Replication.TIMEOUT_UNIT);
+        logger.info("Service configuration: Replication TIMEOUT=" + Replication.TIMEOUT);
         if (Replication.W + Replication.R <= Replication.N) {
             logger.warn("Replication parameters must maintain formula [ W + R > N ] !");
             return;
         }
         logger.info("Type in: method name,node host,node id,existing node host, existing node id");
-        logger.info("Example: join,localhost,10,localhost,0");
+        logger.info("Example: create,localhost,10");
         logger.info("Example: join,localhost,15,localhost,10");
         logger.info("Example: join,localhost,20,localhost,15");
         logger.info("Example: join,localhost,25,localhost,20");
@@ -67,6 +67,7 @@ public final class ServerLauncher {
         logger.info("Example: crash");
         logger.info("Example: recover,localhost,20");
         logger.info("Example: leave");
+        logger.info("Example: view");
         StorageUtil.init();
         NetworkUtil.printMachineIPv4();
         logger.info("Server is ready for request >");
@@ -74,34 +75,12 @@ public final class ServerLauncher {
     }
 
     /**
-     * View ring topology from the node in the ring
-     */
-    public static void view() throws RemoteException {
-        if (nodeState != NodeState.CONNECTED) {
-            logger.warn("Must be CONNECTED to view topology! Current nodeState=" + nodeState);
-            return;
-        }
-        List<Node> nodes = new LinkedList<>();
-        for (Map.Entry<Integer, String> entry : RemoteUtil.getRemoteNode(node, NodeServer.class).getNodes().entrySet()) {
-            nodes.add(RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).getNode());
-        }
-        logger.info("Viewing topology from node=" + node);
-        for (Node node : nodes) {
-            logger.info(node);
-        }
-    }
-
-    /**
-     * Signals current node to join the ring and take items that fall into it's responsibility from the successor node
-     * <p/>
-     * Existing node MUST be operational!
+     * Signals current node to create the ring
      *
-     * @param nodeHost         host for new current node
-     * @param nodeId           id for new current node
-     * @param existingNodeHost of node in the ring to fetch data from, or 'none' if current node is the first
-     * @param existingNodeId   of node in the ring to fetch data from, or 0 if current node is the first
+     * @param nodeHost host for new current node
+     * @param nodeId   id for new current node
      */
-    public static void join(@NotNull String nodeHost, int nodeId, @NotNull String existingNodeHost, int existingNodeId) throws Exception {
+    public static void create(@NotNull String nodeHost, int nodeId) throws Exception {
         if (nodeState != NodeState.DISCONNECTED) {
             logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
             return;
@@ -111,28 +90,53 @@ public final class ServerLauncher {
             return;
         }
         startRMIRegistry();
-        if (existingNodeId == 0) {
-            logger.info("NodeId=" + nodeId + " is the first node in the ring");
-            node = register(nodeId, nodeHost);
-            logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
-        } else {
-            logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
-            Node existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNode();
-            if (existingNode.getNodes().isEmpty()) {
-                logger.warn("Existing node must be operational!");
-                return;
-            }
-            if (existingNode.getNodes().containsKey(nodeId)) {
-                logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
-                return;
-            }
-            node = register(nodeId, nodeHost);
-            node.putNodes(existingNode.getNodes());
-            announceJoin();
-            updateItemsAndReplicas();
-            logger.info("NodeId=" + nodeId + " connected as node=" + node + " from existingNode=" + existingNode);
-        }
+        logger.info("NodeId=" + nodeId + " is the first node in the ring");
+        node = register(nodeId, nodeHost);
+        logger.info("NodeId=" + nodeId + " is connected as first node=" + node);
         nodeState = NodeState.CONNECTED;
+    }
+
+    /**
+     * Signals current node to join the ring and take items that fall into it's responsibility from the successor node
+     * <p/>
+     * Existing node MUST be operational!
+     *
+     * @param nodeHost         host for new current node
+     * @param nodeId           id for new current node
+     * @param existingNodeHost of node in the ring to fetch data from
+     * @param existingNodeId   of node in the ring to fetch data from
+     */
+    public static void join(@NotNull String nodeHost, int nodeId, @NotNull String existingNodeHost, int existingNodeId) throws Exception {
+        if (testNodeState(nodeId)) return;
+        logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
+        Node existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNode();
+        if (existingNode.getNodes().isEmpty()) {
+            logger.warn("Existing node must be operational!");
+            return;
+        }
+        if (existingNode.getNodes().containsKey(nodeId)) {
+            logger.warn("Cannot join as nodeId=" + nodeId + " already taken!");
+            return;
+        }
+        node = register(nodeId, nodeHost);
+        node.putNodes(existingNode.getNodes());
+        announceJoin();
+        updateItemsAndReplicas();
+        logger.info("NodeId=" + nodeId + " connected as node=" + node + " from existingNode=" + existingNode);
+        nodeState = NodeState.CONNECTED;
+    }
+
+    private static boolean testNodeState(int nodeId) {
+        if (nodeState != NodeState.DISCONNECTED) {
+            logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
+            return true;
+        }
+        if (nodeId <= 0) {
+            logger.warn("Node id must be positive integer [ nodeID > 0 ] !");
+            return true;
+        }
+        startRMIRegistry();
+        return false;
     }
 
     /**
@@ -198,6 +202,24 @@ public final class ServerLauncher {
         recoverItems();
         logger.info("NodeId=" + node.getId() + " has recovered");
         nodeState = NodeState.CONNECTED;
+    }
+
+    /**
+     * View ring topology from the node in the ring
+     */
+    public static void view() throws RemoteException {
+        if (nodeState != NodeState.CONNECTED) {
+            logger.warn("Must be CONNECTED to view topology! Current nodeState=" + nodeState);
+            return;
+        }
+        List<Node> nodes = new LinkedList<>();
+        for (Map.Entry<Integer, String> entry : RemoteUtil.getRemoteNode(node, NodeServer.class).getNodes().entrySet()) {
+            nodes.add(RemoteUtil.getRemoteNode(new Node(entry.getKey(), entry.getValue()), NodeServer.class).getNode());
+        }
+        logger.info("Viewing topology from node=" + node);
+        for (Node node : nodes) {
+            logger.info(node);
+        }
     }
 
     /**
@@ -297,11 +319,12 @@ public final class ServerLauncher {
      * - assume Replication.N = 3
      * - NX is the node to join
      * - x marks possible places of replicas for NX
+     * - y marks the replicas of NX we want to find
      * <p/>
      * ----------------------------------------
      * | nodes   | N1 | N2 | N3 | NX | N4 | N5 |
      * ----------------------------------------
-     * | replica |    |    | x  |    | x  |    |
+     * | replica |    |    | x  | y  | x  |    |
      * ----------------------------------------
      * | items   |    | x  | x  |    |    |    |
      * -----------------------------------------
@@ -343,13 +366,14 @@ public final class ServerLauncher {
      * - assume Replication.N = 3
      * - NX is the node to leave
      * - x marks possible places of items for NX
+     * - y marks the items of NX we want to find
      * <p/>
      * ----------------------------------------
      * | nodes   | N1 | N2 | NX | N4 | N5 | N6 |
      * ----------------------------------------
      * | replica |    |    |    | x  | x  |    |
      * ----------------------------------------
-     * | items   |    |    | x  |    |    |    |
+     * | items   |    |    | y  |    |    |    |
      * -----------------------------------------
      *
      * @param startNode node to start search from
