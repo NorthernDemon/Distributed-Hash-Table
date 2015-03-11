@@ -82,7 +82,7 @@ public final class ServerLauncher {
      */
     public static void create(@NotNull String nodeHost, int nodeId) throws Exception {
         if (nodeState != NodeState.DISCONNECTED) {
-            logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
+            logger.warn("Must be DISCONNECTED to create! Current nodeState=" + nodeState);
             return;
         }
         if (nodeId <= 0) {
@@ -107,7 +107,15 @@ public final class ServerLauncher {
      * @param existingNodeId   of node in the ring to fetch data from
      */
     public static void join(@NotNull String nodeHost, int nodeId, @NotNull String existingNodeHost, int existingNodeId) throws Exception {
-        if (testNodeState(nodeId)) return;
+        if (nodeState != NodeState.DISCONNECTED) {
+            logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
+            return;
+        }
+        if (nodeId <= 0) {
+            logger.warn("Node id must be positive integer [ nodeID > 0 ] !");
+            return;
+        }
+        startRMIRegistry();
         logger.info("NodeId=" + nodeId + " connects to existing nodeId=" + existingNodeId);
         Node existingNode = RemoteUtil.getRemoteNode(new Node(existingNodeId, existingNodeHost), NodeServer.class).getNode();
         if (existingNode.getNodes().isEmpty()) {
@@ -124,19 +132,6 @@ public final class ServerLauncher {
         updateItemsAndReplicas();
         logger.info("NodeId=" + nodeId + " connected as node=" + node + " from existingNode=" + existingNode);
         nodeState = NodeState.CONNECTED;
-    }
-
-    private static boolean testNodeState(int nodeId) {
-        if (nodeState != NodeState.DISCONNECTED) {
-            logger.warn("Must be DISCONNECTED to join! Current nodeState=" + nodeState);
-            return true;
-        }
-        if (nodeId <= 0) {
-            logger.warn("Node id must be positive integer [ nodeID > 0 ] !");
-            return true;
-        }
-        startRMIRegistry();
-        return false;
     }
 
     /**
