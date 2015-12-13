@@ -17,7 +17,7 @@ import java.util.*;
 
 /**
  * Convenient class to work with Node's internal list of items
- * <p/>
+ * <p>
  * Maintains CSV file (under STORAGE_FOLDER directory) in format: {key},{value},{version}
  */
 public abstract class StorageUtil {
