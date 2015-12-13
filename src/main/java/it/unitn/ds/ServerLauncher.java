@@ -98,7 +98,7 @@ public final class ServerLauncher {
 
     /**
      * Signals current node to join the ring and take items that fall into it's responsibility from the successor node
-     * <p/>
+     * <p>
      * Existing node MUST be operational!
      *
      * @param nodeHost         host for new current node
@@ -171,7 +171,7 @@ public final class ServerLauncher {
 
     /**
      * Signals current node to recover based on the existing node in the ring
-     * <p/>
+     * <p>
      * Existing node MUST be operational!
      *
      * @param existingNodeHost of node in the ring to fetch data from
@@ -309,13 +309,13 @@ public final class ServerLauncher {
 
     /**
      * Searches for latest version of items from neighboring nodes
-     * <p/>
+     * <p>
      * Example:
      * - assume Replication.N = 3
      * - NX is the node to join
      * - x marks possible places of replicas for NX
      * - y marks the replicas of NX we want to find
-     * <p/>
+     * <p>
      * ----------------------------------------
      * | nodes   | N1 | N2 | N3 | NX | N4 | N5 |
      * ----------------------------------------
@@ -356,13 +356,13 @@ public final class ServerLauncher {
 
     /**
      * Searches for latest version of items from neighboring nodes
-     * <p/>
+     * <p>
      * Example:
      * - assume Replication.N = 3
      * - NX is the node to leave
      * - x marks possible places of items for NX
      * - y marks the items of NX we want to find
-     * <p/>
+     * <p>
      * ----------------------------------------
      * | nodes   | N1 | N2 | NX | N4 | N5 | N6 |
      * ----------------------------------------
