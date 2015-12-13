@@ -21,11 +21,11 @@ public abstract class InputUtil {
 
     /**
      * Wait for user input indefinitely, which consist of method name and sequence of parameters, separated by SEPARATOR
-     * <p/>
+     * <p>
      * Supported parameter types are:
      * - Integer
      * - String
-     * <p/>
+     * <p>
      * Description: methodName,parameter1,parameter2
      * Example: sayLouderNTimes,5,I ate pillow
      *

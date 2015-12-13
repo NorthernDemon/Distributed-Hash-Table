@@ -4,7 +4,7 @@ import it.unitn.ds.entity.ReplicationTimeout;
 
 /**
  * Configures replication within the ring and quorums for read/write access
- * <p/>
+ * <p>
  * Must maintain the formula [ W + R > N ] to avoid read/write conflicts
  *
  * @see it.unitn.ds.entity.Item
